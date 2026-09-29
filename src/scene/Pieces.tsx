@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { GOAL, type GameState, type Piece } from '../game/rules'
+import { play, type SoundName } from '../ui/sound'
 import { SafeHtml } from './SafeHtml'
 import { BOARD_TOP, nodePos, PIECE_H, restingPositions, type Vec3 } from './layout'
 
@@ -14,9 +15,11 @@ interface Plan {
   seq: number
   delay: number
   hops: Hop[]
+  /** Set on one piece per move so a stack doesn't play every sound several times. */
+  sound?: { last: SoundName }
 }
 
-const HOP = 0.26
+export const HOP = 0.26
 const scratch = new THREE.Vector3()
 
 const bodyGeometry = (() => {
@@ -64,6 +67,10 @@ export function Pieces({ game, portrait, mountSeq, movableIds, selectedId, onPic
     const e = game.event
     if (e.type !== 'move' || e.seq <= mountSeq) return out
     const moved = [...e.pieceIds].sort()
+    const dest = e.path[e.path.length - 1]
+    const team = game.pieces.find((p) => p.id === moved[0])?.team
+    const joined = game.pieces.some((p) => p.pos === dest && p.team === team && !moved.includes(p.id))
+    const last: SoundName = dest === GOAL ? 'goal' : e.captured.length ? 'capture' : joined ? 'stack' : 'step'
     moved.forEach((id, k) => {
       const hops: Hop[] = e.path.map((n) => ({
         to: n === GOAL ? rest[id] : nodePos(n, BOARD_TOP + k * PIECE_H),
@@ -71,7 +78,7 @@ export function Pieces({ game, portrait, mountSeq, movableIds, selectedId, onPic
         arc: n === GOAL ? 2.4 : 0.9,
       }))
       hops[hops.length - 1] = { ...hops[hops.length - 1], to: rest[id] }
-      out[id] = { seq: e.seq, delay: k * 0.04, hops }
+      out[id] = { seq: e.seq, delay: k * 0.04, hops, sound: k === 0 ? { last } : undefined }
     })
     const landAt = e.path.length * HOP + 0.05
     for (const id of e.captured) {
@@ -160,12 +167,26 @@ function PieceView(props: {
   const cur = useRef(new THREE.Vector3(...rest))
   const seenSeq = useRef(0)
   const squash = useRef(0)
-  const anim = useRef<{ from: THREE.Vector3; hops: Hop[]; i: number; t: number; wait: number } | null>(null)
+  const anim = useRef<{
+    from: THREE.Vector3
+    hops: Hop[]
+    i: number
+    t: number
+    wait: number
+    sound?: Plan['sound']
+  } | null>(null)
 
   useLayoutEffect(() => {
     if (plan && plan.seq > seenSeq.current) {
       seenSeq.current = plan.seq
-      anim.current = { from: cur.current.clone(), hops: plan.hops.map((h) => ({ ...h })), i: 0, t: 0, wait: plan.delay }
+      anim.current = {
+        from: cur.current.clone(),
+        hops: plan.hops.map((h) => ({ ...h })),
+        i: 0,
+        t: 0,
+        wait: plan.delay,
+        sound: plan.sound,
+      }
       return
     }
     if (anim.current) {
@@ -209,6 +230,7 @@ function PieceView(props: {
           a.i += 1
           a.t = 0
           squash.current = 1
+          if (a.sound) play(a.i >= a.hops.length ? a.sound.last : 'step')
           if (a.i >= a.hops.length) anim.current = null
         }
       }

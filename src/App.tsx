@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Home } from './ui/Home'
 import { Room } from './ui/Room'
+import { VolumeControl } from './ui/VolumeControl'
 import { saveName, savedName } from './net'
 
 function codeFromHash(): string | null {
@@ -9,6 +10,15 @@ function codeFromHash(): string | null {
 }
 
 export default function App() {
+  return (
+    <>
+      <Screen />
+      <VolumeControl />
+    </>
+  )
+}
+
+function Screen() {
   const [code, setCode] = useState(codeFromHash)
   const [name, setName] = useState(savedName)
 

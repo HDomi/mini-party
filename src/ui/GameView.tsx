@@ -16,8 +16,10 @@ import {
 import { playerId } from '../net'
 import type { RoomApi } from '../net/useRoom'
 import { GameScene, type Preview } from '../scene/GameScene'
+import { HOP } from '../scene/Pieces'
 import { THROW_REVEAL_MS } from '../scene/YutSticks'
 import { celebrateThrow, celebrateWin } from './effects'
+import { play } from './sound'
 
 function usePortrait() {
   const get = () => window.innerWidth < window.innerHeight * 0.9
@@ -105,6 +107,7 @@ export function GameView({
         color: thrower?.color ?? '#333',
       })
       celebrateThrow(event.result, thrower?.color ?? '#ff5d6c')
+      if (event.result === 'yut' || event.result === 'mo') play(event.result)
     }, THROW_REVEAL_MS)
     return () => window.clearTimeout(t)
   }, [event, revealed, game])
@@ -120,12 +123,25 @@ export function GameView({
   useEffect(() => {
     if (!winnerColor) return
     let cancel = () => {}
-    const t = window.setTimeout(() => (cancel = celebrateWin(winnerColor)), 1500)
+    const t = window.setTimeout(() => {
+      cancel = celebrateWin(winnerColor)
+      play('win')
+    }, 1500)
     return () => {
       window.clearTimeout(t)
       cancel()
     }
   }, [winnerColor])
+
+  // Chime when the turn passes to me, once the move or throw that passed it has played out.
+  useEffect(() => {
+    if (cur !== playerId || game.phase === 'over' || game.seq <= mountSeq) return
+    const wait = event.type === 'move' ? event.path.length * HOP * 1000 + 250 : THROW_REVEAL_MS + 200
+    const t = window.setTimeout(() => play('turn'), wait)
+    return () => window.clearTimeout(t)
+    // Only the hand-over matters; the rest is read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur])
 
   // Any new state invalidates the local selection.
   useEffect(() => {

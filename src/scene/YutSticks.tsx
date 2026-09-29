@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { seededRng, type GameEvent } from '../game/rules'
+import { play } from '../ui/sound'
 import { Impacts, type ImpactsHandle } from './Impacts'
 import { BOARD_TOP } from './layout'
 import { addShake } from './Shake'
@@ -72,6 +73,7 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
   useEffect(() => {
     if (event.type !== 'throw' || event.seq <= mountSeq) return
     clock.current = { t: 0, plans: planThrow(event), sticks: event.sticks, hits: [0, 0, 0, 0] }
+    play('throw')
   }, [event, mountSeq])
 
   useFrame((_, dt) => {
@@ -102,10 +104,12 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
           c.hits[i] = 1
           impacts.current?.hit(p.land.x, p.land.z, 1)
           addShake(0.26)
+          play('land')
         } else if (c.hits[i] === 1 && b >= 0.22) {
           c.hits[i] = 2
           impacts.current?.hit(p.land.x, p.land.z, 0.45)
           addShake(0.06)
+          play('land', 0.35)
         }
         // two small settling bounces
         const hop = b < 0.22 ? Math.sin((b / 0.22) * Math.PI) * 0.35 : b < 0.36 ? Math.sin(((b - 0.22) / 0.14) * Math.PI) * 0.1 : 0

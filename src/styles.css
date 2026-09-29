@@ -962,3 +962,70 @@ input {
   background: #fff;
   outline: none;
 }
+
+/* ---------- volume ---------- */
+
+.volume {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 4px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  user-select: none;
+}
+.volume-icon {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  font-size: 16px;
+  line-height: 1;
+}
+.volume-bar {
+  position: relative;
+  width: 72px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  outline-offset: 3px;
+}
+.volume-bar::before {
+  content: '';
+  position: absolute;
+  inset: 7px 0;
+  border-radius: 999px;
+  background: var(--line);
+}
+.volume-bar i {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--red);
+}
+/* Keep the HUD and lobby header clear of the fixed volume pill. */
+.hud-top {
+  padding-right: 150px;
+}
+.lobby {
+  padding-top: 60px;
+}
+@media (max-width: 420px) {
+  .volume {
+    padding-right: 10px;
+  }
+  .volume-bar {
+    width: 40px;
+  }
+  .hud-top {
+    padding-right: 104px;
+  }
+}

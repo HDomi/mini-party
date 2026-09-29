@@ -50,6 +50,10 @@ GitHub pauses scheduled workflows after 60 days without repo activity; re-enable
 
 Outside a room the client closes its RTDB socket (`goOffline`) two seconds after the last listener or write finishes, so tabs left on the home screen don't count against the Spark plan's 100 concurrent connections.
 
+## Sound
+
+`src/ui/sound.ts` plays effects through Web Audio (background music is wired up but commented out for now). Volume starts at 0 and is saved in `localStorage` (`yutnori:volume`); the pill in the top-right corner sets it. Effects ship as `.ogg` and `.m4a` (Safari), converted with `afconvert -f m4af -d aac -b 96000 in.ogg out.m4a`. Sources and licenses are in `public/sfx/CREDITS.txt`.
+
 ## Password gate
 
 `scripts/vite-plugin-password-gate.ts` encrypts the single JS bundle with AES-GCM (key from PBKDF2-SHA256, 600k iterations). `dist/` only contains the ciphertext and a small loader that asks for the password and decrypts in the browser. A wrong password shows an alert and closes the tab (or blanks it, since browsers only let scripts close windows they opened). The password is remembered in `sessionStorage` for the tab so reloads don't ask again.

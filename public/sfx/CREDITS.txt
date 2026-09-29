@@ -1,0 +1,6 @@
+Sound effects: Kenney (www.kenney.nl), CC0 1.0
+  Impact Sounds     land-*, step-*, capture-*
+  Casino Audio      throw-*, stack-*
+  Interface Sounds  goal-1, turn-1, click-1
+  Music Jingles     yut-1, mo-1, win-1
+
