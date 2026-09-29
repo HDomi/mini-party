@@ -21,6 +21,19 @@ export function Room({
   // Checked first: the room is deleted right after this is set.
   if (forfeit) return <ForfeitWin {...forfeit} onLeave={onLeave} />
 
+  if (api.connError) {
+    return (
+      <main className="center-screen">
+        <div className="home-card">
+          <h2 className="title small">연결 오류</h2>
+          <p className="subtitle">{api.connError}</p>
+          <button className="btn primary big" onClick={onLeave}>
+            처음으로
+          </button>
+        </div>
+      </main>
+    )
+  }
   if (api.room === undefined) {
     return (
       <main className="center-screen">

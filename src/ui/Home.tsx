@@ -17,18 +17,23 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
   const create = async () => {
     if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
     setBusy(true)
-    for (let i = 0; i < 5; i++) {
-      const c = makeRoomCode()
-      const ok = await backend.createRoom(c, {
-        createdAt: Date.now(),
-        hostId: playerId,
-        settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 },
-        game: null,
-      })
-      if (ok) return enter(c)
+    try {
+      for (let i = 0; i < 5; i++) {
+        const c = makeRoomCode()
+        const ok = await backend.createRoom(c, {
+          createdAt: Date.now(),
+          hostId: playerId,
+          settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 },
+          game: null,
+        })
+        if (ok) return enter(c)
+      }
+      setErr('방을 만들지 못했어요. 다시 시도해 주세요')
+    } catch (e) {
+      console.error(e)
+      setErr('서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')
     }
     setBusy(false)
-    setErr('방을 만들지 못했어요. 다시 시도해 주세요')
   }
 
   const join = () => {

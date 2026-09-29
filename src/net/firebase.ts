@@ -22,8 +22,12 @@ export class FirebaseBackend implements Backend {
     this.db = getDatabase(app)
   }
 
-  subscribe(code: string, cb: (room: RoomData | null) => void) {
-    return onValue(ref(this.db, `${ROOT}/${code}`), (snap) => cb(snap.val()))
+  subscribe(code: string, cb: (room: RoomData | null) => void, onError?: (err: Error) => void) {
+    return onValue(
+      ref(this.db, `${ROOT}/${code}`),
+      (snap) => cb(snap.val()),
+      (err) => onError?.(err),
+    )
   }
 
   async createRoom(code: string, room: RoomData) {
@@ -34,22 +38,31 @@ export class FirebaseBackend implements Backend {
     return res.committed
   }
 
-  join(code: string, player: Parameters<Backend['join']>[1]) {
+  join(code: string, player: Parameters<Backend['join']>[1], onError?: (err: Error) => void) {
     const playerRef = ref(this.db, `${ROOT}/${code}/players/${player.id}`)
-    const unsub = onValue(ref(this.db, '.info/connected'), async (snap) => {
-      if (snap.val() !== true) return
-      await onDisconnect(playerRef).update({ online: false })
-      // `joinedAt` keeps the first value so seat order survives reconnects.
-      await runTransaction(playerRef, (cur) => ({
-        ...player,
-        ...(cur ?? {}),
-        name: player.name,
-        online: true,
-      }))
-    })
+    const unsub = onValue(
+      ref(this.db, '.info/connected'),
+      async (snap) => {
+        if (snap.val() !== true) return
+        try {
+          await onDisconnect(playerRef).update({ online: false })
+          // `joinedAt` keeps the first value so seat order survives reconnects.
+          await runTransaction(playerRef, (cur) => ({
+            ...player,
+            ...(cur ?? {}),
+            name: player.name,
+            online: true,
+          }))
+        } catch (err) {
+          onError?.(err as Error)
+        }
+      },
+      (err) => onError?.(err),
+    )
     return () => {
       unsub()
-      void update(playerRef, { online: false })
+      // Best effort: onDisconnect covers us if this write never lands.
+      update(playerRef, { online: false }).catch(() => {})
     }
   }
 

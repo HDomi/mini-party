@@ -6,8 +6,30 @@ import type { PlayerInfo, RoomData, RoomSettings } from './types'
 export function useRoom(code: string, name: string) {
   const [room, setRoom] = useState<RoomData | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [connError, setConnError] = useState<string | null>(null)
 
-  useEffect(() => backend.subscribe(code, setRoom), [code])
+  useEffect(() => {
+    setConnError(null)
+    // RTDB keeps retrying silently when it can't connect (e.g. the connection quota is full), so time out ourselves.
+    const timer = window.setTimeout(() => setConnError('서버 응답이 없어요. 잠시 후 다시 시도해 주세요'), 10_000)
+    const unsub = backend.subscribe(
+      code,
+      (r) => {
+        window.clearTimeout(timer)
+        setConnError(null)
+        setRoom(r)
+      },
+      (err) => {
+        window.clearTimeout(timer)
+        console.error('room subscription cancelled', err)
+        setConnError('서버에 연결하지 못했어요')
+      },
+    )
+    return () => {
+      window.clearTimeout(timer)
+      unsub()
+    }
+  }, [code])
 
   const players = useMemo(
     () => Object.values(room?.players ?? {}).sort((a, b) => a.joinedAt - b.joinedAt),
@@ -24,7 +46,10 @@ export function useRoom(code: string, name: string) {
     const taken = new Set(players.map((p) => p.team))
     const team = me?.team ?? [0, 1, 2, 3, 4, 5].find((t) => !taken.has(t)) ?? 0
     const info: PlayerInfo = { id: playerId, name, team, online: true, joinedAt: me?.joinedAt ?? Date.now() }
-    return backend.join(code, info)
+    return backend.join(code, info, (err) => {
+      console.error('join failed', err)
+      setConnError('방에 들어가지 못했어요')
+    })
     // Only re-run when the seat itself changes, not on every room update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, canSeat, name])
@@ -40,10 +65,24 @@ export function useRoom(code: string, name: string) {
     window.setTimeout(() => setError((cur) => (cur === msg ? null : cur)), 2200)
   }, [])
 
+  // Writes reject when the server refuses them; surface that instead of an unhandled rejection.
+  const guard = useCallback(
+    async <T,>(p: Promise<T>): Promise<T | undefined> => {
+      try {
+        return await p
+      } catch (err) {
+        console.error(err)
+        flash('서버와 통신하지 못했어요')
+        return undefined
+      }
+    },
+    [flash],
+  )
+
   const act = useCallback(
     async (action: Action, proxy = false) => {
       let err: string | null = null
-      await backend.transactGame(code, (cur) => {
+      await guard(backend.transactGame(code, (cur) => {
         err = null
         if (!cur) return undefined
         try {
@@ -53,10 +92,10 @@ export function useRoom(code: string, name: string) {
           else throw e
           return undefined
         }
-      })
+      }))
       if (err) flash(err)
     },
-    [code, flash],
+    [code, flash, guard],
   )
 
   const start = useCallback(async () => {
@@ -72,15 +111,18 @@ export function useRoom(code: string, name: string) {
       teamMode: s.teamMode,
       piecesPerTeam: s.piecesPerTeam,
     })
-    await backend.transactGame(code, () => JSON.stringify(game))
-  }, [room, players, code, flash])
+    await guard(backend.transactGame(code, () => JSON.stringify(game)))
+  }, [room, players, code, flash, guard])
 
-  const toLobby = useCallback(() => backend.transactGame(code, () => null), [code])
-  const updatePlayerTeam = useCallback((id: string, team: number) => backend.updatePlayer(code, id, { team }), [code])
-  const setSettings = useCallback((patch: Partial<RoomSettings>) => backend.updateSettings(code, patch), [code])
-  const deleteRoom = useCallback(() => backend.deleteRoom(code), [code])
+  const toLobby = useCallback(() => guard(backend.transactGame(code, () => null)), [code, guard])
+  const updatePlayerTeam = useCallback(
+    (id: string, team: number) => guard(backend.updatePlayer(code, id, { team })),
+    [code, guard],
+  )
+  const setSettings = useCallback((patch: Partial<RoomSettings>) => guard(backend.updateSettings(code, patch)), [code, guard])
+  const deleteRoom = useCallback(() => guard(backend.deleteRoom(code)), [code, guard])
 
-  return { room, players, game, me, inGame, hostId, error, act, start, toLobby, updatePlayerTeam, setSettings, deleteRoom, flash }
+  return { room, players, game, me, inGame, hostId, error, connError, act, start, toLobby, updatePlayerTeam, setSettings, deleteRoom, flash }
 }
 
 export type RoomApi = ReturnType<typeof useRoom>

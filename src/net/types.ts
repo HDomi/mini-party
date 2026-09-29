@@ -23,11 +23,12 @@ export interface RoomData {
 
 export interface Backend {
   readonly kind: 'firebase' | 'local'
-  subscribe(code: string, cb: (room: RoomData | null) => void): () => void
+  /** `onError` fires when the listener is cancelled by the server (e.g. permission denied). */
+  subscribe(code: string, cb: (room: RoomData | null) => void, onError?: (err: Error) => void): () => void
   /** Creates the room unless a fresh one already uses the code. */
   createRoom(code: string, room: RoomData): Promise<boolean>
   /** Registers the player and keeps `online` in sync until the returned fn is called. */
-  join(code: string, player: PlayerInfo): () => void
+  join(code: string, player: PlayerInfo, onError?: (err: Error) => void): () => void
   updatePlayer(code: string, id: string, patch: Partial<PlayerInfo>): Promise<void>
   updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void>
   /** Atomic read-modify-write of the game. Return undefined from fn to abort. */
