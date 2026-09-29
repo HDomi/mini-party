@@ -4,6 +4,7 @@ import {
   onDisconnect,
   onValue,
   ref,
+  remove,
   runTransaction,
   update,
   type Database,
@@ -63,5 +64,9 @@ export class FirebaseBackend implements Backend {
   async transactGame(code: string, fn: (game: string | null) => string | null | undefined) {
     const res = await runTransaction(ref(this.db, `${ROOT}/${code}/game`), (cur: string | null) => fn(cur ?? null))
     return res.committed
+  }
+
+  async deleteRoom(code: string) {
+    await remove(ref(this.db, `${ROOT}/${code}`))
   }
 }

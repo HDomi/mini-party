@@ -33,6 +33,7 @@ body {
     radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.7), transparent 60%),
     linear-gradient(180deg, var(--bg-1), var(--bg-2));
   overflow: hidden;
+  word-break: keep-all;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
@@ -913,4 +914,40 @@ input {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+.win-card.forfeit {
+  z-index: 1;
+  animation: pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.win-card.forfeit p {
+  margin: 10px 0 20px;
+}
+
+.name-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 17px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 2px dashed rgba(58, 42, 34, 0.25);
+}
+.name-btn span {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.name-btn:hover {
+  border-bottom-color: var(--ink);
+}
+.name-input {
+  width: 9em;
+  min-width: 0;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 16px;
+  background: #fff;
+  outline: none;
 }

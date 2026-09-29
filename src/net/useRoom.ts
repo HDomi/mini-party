@@ -63,9 +63,9 @@ export function useRoom(code: string, name: string) {
     if (!room) return
     const s = room.settings
     const seated = players.filter((p) => p.online)
-    if (seated.length < 2) return flash('2명 이상 있어야 시작할 수 있어')
+    if (seated.length < 2) return flash('2명 이상 있어야 시작할 수 있어요')
     if (s.teamMode && new Set(seated.map((p) => p.team % s.teamCount)).size < 2) {
-      return flash('팀이 두 개 이상 있어야 해')
+      return flash('팀이 두 개 이상 있어야 해요')
     }
     const game = createGame({
       players: seated.map((p) => ({ id: p.id, name: p.name, team: s.teamMode ? p.team % s.teamCount : 0 })),
@@ -78,8 +78,9 @@ export function useRoom(code: string, name: string) {
   const toLobby = useCallback(() => backend.transactGame(code, () => null), [code])
   const updatePlayerTeam = useCallback((id: string, team: number) => backend.updatePlayer(code, id, { team }), [code])
   const setSettings = useCallback((patch: Partial<RoomSettings>) => backend.updateSettings(code, patch), [code])
+  const deleteRoom = useCallback(() => backend.deleteRoom(code), [code])
 
-  return { room, players, game, me, inGame, hostId, error, act, start, toLobby, updatePlayerTeam, setSettings, flash }
+  return { room, players, game, me, inGame, hostId, error, act, start, toLobby, updatePlayerTeam, setSettings, deleteRoom, flash }
 }
 
 export type RoomApi = ReturnType<typeof useRoom>

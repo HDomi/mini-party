@@ -12,10 +12,11 @@ export class LocalBackend implements Backend {
 
   constructor() {
     // localStorage syncs across tabs lazily, so the message carries the room itself.
-    this.channel.onmessage = (e: MessageEvent<{ code: string; raw: string }>) => {
+    this.channel.onmessage = (e: MessageEvent<{ code: string; raw: string | null }>) => {
       const { code, raw } = e.data
-      if (localStorage.getItem(key(code)) !== raw) localStorage.setItem(key(code), raw)
-      this.emit(code, JSON.parse(raw) as RoomData)
+      if (raw === null) localStorage.removeItem(key(code))
+      else if (localStorage.getItem(key(code)) !== raw) localStorage.setItem(key(code), raw)
+      this.emit(code, raw === null ? null : (JSON.parse(raw) as RoomData))
     }
   }
 
@@ -81,6 +82,12 @@ export class LocalBackend implements Backend {
     this.mutate(code, (room) => {
       room.settings = { ...room.settings, ...patch }
     })
+  }
+
+  async deleteRoom(code: string) {
+    localStorage.removeItem(key(code))
+    this.channel.postMessage({ code, raw: null })
+    this.emit(code, null)
   }
 
   async transactGame(code: string, fn: (game: string | null) => string | null | undefined) {

@@ -1,13 +1,20 @@
-import { Canvas, useFrame } from '@react-three/fiber'
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import type * as THREE from 'three'
+import { useState, type CSSProperties } from 'react'
 import { TEAM_COLORS, TEAM_NAMES } from '../game/rules'
 import { playerId } from '../net'
 import type { RoomApi } from '../net/useRoom'
-import { Board } from '../scene/Board'
-import { Lights } from '../scene/GameScene'
+import { Backdrop } from './Backdrop'
 
-export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLeave: () => void }) {
+export function Lobby({
+  code,
+  api,
+  onLeave,
+  onRename,
+}: {
+  code: string
+  api: RoomApi
+  onLeave: () => void
+  onRename: (name: string) => void
+}) {
   const { room, players, hostId } = api
   const [copied, setCopied] = useState(false)
   if (!room) return null
@@ -21,7 +28,7 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1500)
     } catch {
-      api.flash('복사가 안 돼. 주소창 링크를 보내줘')
+      api.flash('복사하지 못했어요. 주소창의 링크를 보내 주세요')
     }
   }
 
@@ -29,12 +36,7 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
 
   return (
     <main className="lobby">
-      <Canvas className="scene backdrop" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 34, position: [0, 17, 17] }}>
-        <Lights />
-        <Spin>
-          <Board />
-        </Spin>
-      </Canvas>
+      <Backdrop />
 
       <div className="lobby-card">
         <header className="lobby-head">
@@ -94,7 +96,7 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
               <li key={p.id} className={`${p.online ? '' : 'off'}${mine ? ' me' : ''}`}>
                 <i className="dot" style={{ background: t === null ? '#c7b299' : TEAM_COLORS[t] }} />
                 <span className="pname">
-                  {p.name}
+                  {mine ? <NameEditor name={p.name} onSave={onRename} /> : p.name}
                   {p.id === hostId && <em className="crown">방장</em>}
                   {mine && <em className="you">나</em>}
                 </span>
@@ -118,7 +120,7 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
           })}
           {Array.from({ length: Math.max(0, 2 - players.length) }, (_, i) => (
             <li key={`empty-${i}`} className="empty">
-              친구를 기다리는 중…
+              친구를 기다리고 있어요…
             </li>
           ))}
         </ul>
@@ -129,7 +131,7 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
             게임 시작
           </button>
         ) : (
-          <p className="waiting">방장이 시작하길 기다리는 중…</p>
+          <p className="waiting">방장이 시작하기를 기다리고 있어요…</p>
         )}
         {api.error && <p className="err">{api.error}</p>}
       </div>
@@ -137,10 +139,46 @@ export function Lobby({ code, api, onLeave }: { code: string; api: RoomApi; onLe
   )
 }
 
-function Spin({ children }: { children: ReactNode }) {
-  const ref = useRef<THREE.Group>(null)
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.08
-  })
-  return <group ref={ref}>{children}</group>
+/** Inline rename for my own row. Only rendered in the lobby, so names are fixed once a game starts. */
+function NameEditor({ name, onSave }: { name: string; onSave: (name: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+
+  const commit = () => {
+    const next = draft.trim().slice(0, 10)
+    if (next && next !== name) onSave(next)
+    setEditing(false)
+  }
+
+  if (!editing) {
+    return (
+      <button
+        className="name-btn"
+        title="이름 수정"
+        onClick={() => {
+          setDraft(name)
+          setEditing(true)
+        }}
+      >
+        {name}
+        <span aria-hidden>✎</span>
+      </button>
+    )
+  }
+  return (
+    <input
+      className="name-input"
+      value={draft}
+      maxLength={10}
+      autoFocus
+      aria-label="내 이름"
+      placeholder="이름을 입력해 주세요"
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'Escape') setEditing(false)
+      }}
+    />
+  )
 }

@@ -15,7 +15,7 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
   }
 
   const create = async () => {
-    if (!trimmed) return setErr('이름부터 적어줘')
+    if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
     setBusy(true)
     for (let i = 0; i < 5; i++) {
       const c = makeRoomCode()
@@ -28,13 +28,13 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
       if (ok) return enter(c)
     }
     setBusy(false)
-    setErr('방을 못 만들었어. 다시 해줘')
+    setErr('방을 만들지 못했어요. 다시 시도해 주세요')
   }
 
   const join = () => {
-    if (!trimmed) return setErr('이름부터 적어줘')
+    if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
     const c = code.trim().toUpperCase()
-    if (!/^[A-Z0-9]{4}$/.test(c)) return setErr('방 코드는 4글자야')
+    if (!/^[A-Z0-9]{4}$/.test(c)) return setErr('방 코드는 4글자예요')
     enter(c)
   }
 
@@ -45,7 +45,7 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
         <h1 className="title">
           슈퍼 <span>윷놀이</span>
         </h1>
-        <p className="subtitle">친구들이랑 한 판!</p>
+        <p className="subtitle">친구들과 한 판 즐겨 보세요!</p>
 
         <label className="field">
           <span>내 이름</span>
@@ -63,7 +63,7 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
 
         {initialCode ? (
           <button className="btn primary big" onClick={join}>
-            {initialCode} 방 들어가기
+            {initialCode} 방에 들어가기
           </button>
         ) : (
           <>
@@ -92,7 +92,7 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
           </>
         )}
         {err && <p className="err">{err}</p>}
-        {backend.kind === 'local' && <p className="hint">로컬 모드: 같은 브라우저의 탭끼리만 연결돼</p>}
+        {backend.kind === 'local' && <p className="hint">로컬 모드: 같은 브라우저의 탭끼리만 연결돼요</p>}
       </div>
     </main>
   )

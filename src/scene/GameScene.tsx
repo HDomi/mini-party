@@ -7,6 +7,7 @@ import { Board } from './Board'
 import { SafeHtml } from './SafeHtml'
 import { BOARD_TOP, nodePos, type Vec3 } from './layout'
 import { Pieces, type PiecesProps } from './Pieces'
+import { ShakeGroup } from './Shake'
 import { Trays } from './Trays'
 import { YutSticks } from './YutSticks'
 
@@ -37,11 +38,13 @@ export function GameScene(props: Props) {
     >
       <Lights />
       <CameraRig portrait={portrait} />
-      <Board />
-      <Trays game={game} portrait={portrait} online={online} />
-      <Pieces game={game} portrait={portrait} {...pieceProps} />
-      {preview && <DestMarker preview={preview} onConfirm={onConfirm} />}
-      <YutSticks event={game.event} mountSeq={pieceProps.mountSeq} />
+      <ShakeGroup>
+        <Board />
+        <Trays game={game} portrait={portrait} online={online} />
+        <Pieces game={game} portrait={portrait} {...pieceProps} />
+        {preview && <DestMarker preview={preview} onConfirm={onConfirm} />}
+        <YutSticks event={game.event} mountSeq={pieceProps.mountSeq} />
+      </ShakeGroup>
     </Canvas>
   )
 }

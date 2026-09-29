@@ -2,7 +2,9 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { seededRng, type GameEvent } from '../game/rules'
+import { Impacts, type ImpactsHandle } from './Impacts'
 import { BOARD_TOP } from './layout'
+import { addShake } from './Shake'
 import { stickTextures } from './textures'
 
 const LEN = 2.1
@@ -57,11 +59,12 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
 
   const refs = useRef<(THREE.Group | null)[]>([])
   const root = useRef<THREE.Group>(null)
-  const clock = useRef<{ t: number; plans: StickPlan[]; sticks: boolean[] } | null>(null)
+  const impacts = useRef<ImpactsHandle>(null)
+  const clock = useRef<{ t: number; plans: StickPlan[]; sticks: boolean[]; hits: number[] } | null>(null)
 
   useEffect(() => {
     if (event.type !== 'throw' || event.seq <= mountSeq) return
-    clock.current = { t: 0, plans: planThrow(event), sticks: event.sticks }
+    clock.current = { t: 0, plans: planThrow(event), sticks: event.sticks, hits: [0, 0, 0, 0] }
   }, [event, mountSeq])
 
   useFrame((_, dt) => {
@@ -86,8 +89,18 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
 
       let wobble = 0
       if (k >= 1) {
-        // two small settling bounces
         const b = t - FLIGHT
+        // first touchdown hits hard, the bounce lands softly
+        if (c.hits[i] === 0) {
+          c.hits[i] = 1
+          impacts.current?.hit(p.land.x, p.land.z, 1)
+          addShake(0.26)
+        } else if (c.hits[i] === 1 && b >= 0.22) {
+          c.hits[i] = 2
+          impacts.current?.hit(p.land.x, p.land.z, 0.45)
+          addShake(0.06)
+        }
+        // two small settling bounces
         const hop = b < 0.22 ? Math.sin((b / 0.22) * Math.PI) * 0.35 : b < 0.36 ? Math.sin(((b - 0.22) / 0.14) * Math.PI) * 0.1 : 0
         g.position.y = restY + hop
         wobble = Math.exp(-b * 9) * Math.sin(b * 38) * 0.25
@@ -106,14 +119,17 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
   })
 
   return (
-    <group ref={root} visible={false}>
-      {[0, 1, 2, 3].map((i) => (
-        <group key={i} ref={(g) => void (refs.current[i] = g)}>
-          <mesh geometry={roundGeometry} material={mats.round} castShadow />
-          <mesh geometry={flatGeometry} material={i === 0 ? mats.marked : mats.flat} castShadow />
-        </group>
-      ))}
-    </group>
+    <>
+      <Impacts ref={impacts} />
+      <group ref={root} visible={false}>
+        {[0, 1, 2, 3].map((i) => (
+          <group key={i} ref={(g) => void (refs.current[i] = g)}>
+            <mesh geometry={roundGeometry} material={mats.round} castShadow />
+            <mesh geometry={flatGeometry} material={i === 0 ? mats.marked : mats.flat} castShadow />
+          </group>
+        ))}
+      </group>
+    </>
   )
 }
 

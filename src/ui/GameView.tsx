@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { currentPlayer, groupOf, HOME, legalMoves, RESULT_LABEL, type GameState } from '../game/rules'
+import { currentPlayer, groupOf, HOME, legalMoves, RESULT_LABEL, type GameState, type Team } from '../game/rules'
 import { playerId } from '../net'
 import type { RoomApi } from '../net/useRoom'
 import { GameScene, type Preview } from '../scene/GameScene'
@@ -19,7 +19,22 @@ function usePortrait() {
 
 const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
-export function GameView({ code, api, game, onLeave }: { code: string; api: RoomApi; game: GameState; onLeave: () => void }) {
+/** How long everyone else must stay offline before the last player wins. Covers reloads. */
+const LAST_STANDING_GRACE_MS = 15_000
+
+export function GameView({
+  code,
+  api,
+  game,
+  onLeave,
+  onLastStanding,
+}: {
+  code: string
+  api: RoomApi
+  game: GameState
+  onLeave: () => void
+  onLastStanding: (team: Team) => void
+}) {
   const portrait = usePortrait()
   const [mountSeq] = useState(game.seq)
   const [revealed, setRevealed] = useState(game.seq)
@@ -34,6 +49,20 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
     for (const id of Object.keys(game.names)) o[id] = api.room?.players?.[id]?.online ?? false
     return o
   }, [api.room?.players, game.names])
+
+  // Everyone but me left a running game: after a grace period I win and the room goes away.
+  const alone =
+    api.inGame &&
+    game.phase !== 'over' &&
+    Object.keys(game.names).every((id) => id === playerId || !online[id])
+  const myTeam = game.teams.find((t) => t.members.includes(playerId))
+  useEffect(() => {
+    if (!alone || !myTeam) return
+    const t = window.setTimeout(() => onLastStanding(myTeam), LAST_STANDING_GRACE_MS)
+    return () => window.clearTimeout(t)
+    // myTeam/onLastStanding are stable for the life of this game
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alone])
 
   const cur = currentPlayer(game)
   const team = game.teams[game.turn]
@@ -52,7 +81,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
       setBanner({
         seq: event.seq,
         text: `${RESULT_LABEL[event.result]}!`,
-        sub: skipped ? '움직일 말이 없어' : event.result === 'yut' || event.result === 'mo' ? '한 번 더!' : null,
+        sub: skipped ? '움직일 말이 없어요' : event.result === 'yut' || event.result === 'mo' ? '한 번 더!' : null,
         color: thrower?.color ?? '#333',
       })
       celebrateThrow(event.result, thrower?.color ?? '#ff5d6c')
@@ -218,8 +247,9 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
 
       {!winner && (
         <footer className="dock">
-          {!online[cur] && api.inGame && !myTurn && (
-            <p className="notice">{game.names[cur]} 연결이 끊겼어. 대신 진행해도 돼</p>
+          {alone && <p className="notice">다른 플레이어가 모두 나갔어요. 15초 안에 돌아오지 않으면 승리로 처리돼요</p>}
+          {!alone && !online[cur] && api.inGame && !myTurn && (
+            <p className="notice">{game.names[cur]} 님의 연결이 끊겼어요. 대신 진행하셔도 돼요</p>
           )}
           {pending.length > 0 && (
             <div className="chips">
@@ -246,7 +276,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
             </button>
           ) : movePhase ? (
             <div className="move-help">
-              <p>{canHover ? '움직일 말을 눌러' : '말을 고르고 한 번 더 눌러'}</p>
+              <p>{canHover ? '움직일 말을 눌러 주세요' : '말을 고른 뒤 한 번 더 눌러 주세요'}</p>
               {homeMove && (
                 <button className="btn primary" onClick={() => doMove(homeMove.piece.id)} disabled={busy}>
                   새 말 내기
@@ -254,7 +284,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
               )}
             </div>
           ) : (
-            <p className="waiting">{throwing ? '두근두근…' : `${game.names[cur]} 기다리는 중…`}</p>
+            <p className="waiting">{throwing ? '두근두근…' : `${game.names[cur]} 님을 기다리고 있어요…`}</p>
           )}
         </footer>
       )}
@@ -270,7 +300,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
         <div className="overlay">
           <div className="win-card" style={{ '--c': winner.color } as CSSProperties}>
             <h2>{winner.name} 승리!</h2>
-            <p>{winner.members.length > 1 ? winner.members.map((m) => game.names[m]).join(', ') : '축하해!'}</p>
+            <p>{winner.members.length > 1 ? winner.members.map((m) => game.names[m]).join(', ') : '축하해요!'}</p>
             {isHost ? (
               <div className="row">
                 <button className="btn primary big" onClick={api.start}>
@@ -281,7 +311,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Room
                 </button>
               </div>
             ) : (
-              <p className="waiting">방장을 기다리는 중…</p>
+              <p className="waiting">방장을 기다리고 있어요…</p>
             )}
           </div>
         </div>

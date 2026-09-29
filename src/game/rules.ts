@@ -130,7 +130,7 @@ export function createGame(opts: {
     winner: null,
     seq: 1,
     event: { seq: 1, type: 'start' },
-    log: [`게임 시작! ${teams[0].name} 먼저`],
+    log: [`게임을 시작해요! 첫 차례: ${teams[0].name}`],
   }
 }
 
@@ -260,7 +260,7 @@ function settle(s: GameState, by: string) {
     return
   }
   if (!hasAnyMove(s)) {
-    pushLog(s, `${s.names[by] ?? '?'}: 움직일 말이 없어 턴을 넘겨`)
+    pushLog(s, `${s.names[by] ?? '?'}: 움직일 말이 없어서 차례를 넘겨요`)
     endTurn(s)
     return
   }
@@ -278,13 +278,13 @@ export function applyAction(
 ): GameState {
   const rng = opts.rng ?? Math.random
   const s: GameState = structuredClone(prev)
-  if (s.phase === 'over') throw new RuleError('게임이 끝났어')
-  if (!opts.proxy && action.by !== currentPlayer(s)) throw new RuleError('내 차례가 아니야')
+  if (s.phase === 'over') throw new RuleError('게임이 끝났어요')
+  if (!opts.proxy && action.by !== currentPlayer(s)) throw new RuleError('내 차례가 아니에요')
   const actor = currentPlayer(s)
   const name = s.names[actor] ?? '?'
 
   if (action.type === 'throw') {
-    if (s.phase !== 'throw' || s.throwsLeft <= 0) throw new RuleError('지금은 던질 수 없어')
+    if (s.phase !== 'throw' || s.throwsLeft <= 0) throw new RuleError('지금은 던질 수 없어요')
     const { sticks, result } = throwSticks(rng)
     s.throwsLeft -= 1
     if (result === 'yut' || result === 'mo') s.throwsLeft += 1
@@ -297,13 +297,13 @@ export function applyAction(
     return s
   }
 
-  if (s.phase !== 'move') throw new RuleError('먼저 윷을 던져')
+  if (s.phase !== 'move') throw new RuleError('먼저 윷을 던져 주세요')
   const result = s.pending[action.pendingIndex]
-  if (!result) throw new RuleError('없는 결과야')
+  if (!result) throw new RuleError('없는 결과예요')
   const piece = s.pieces.find((p) => p.id === action.pieceId)
-  if (!piece || piece.team !== s.turn) throw new RuleError('내 말이 아니야')
+  if (!piece || piece.team !== s.turn) throw new RuleError('내 말이 아니에요')
   const dest = destination(piece, result)
-  if (!dest) throw new RuleError('그 말은 못 움직여')
+  if (!dest) throw new RuleError('그 말은 움직일 수 없어요')
 
   const group = groupOf(s, piece)
   const captured: string[] = []
@@ -339,13 +339,13 @@ export function applyAction(
   }
 
   const count = group.length > 1 ? ` (${group.length}동)` : ''
-  if (dest.to === GOAL) pushLog(s, `${name}: 말이 났어${count}`)
+  if (dest.to === GOAL) pushLog(s, `${name}: 말이 났어요${count}`)
   else if (captured.length) {
     const victims = [...new Set(captured.map((id) => s.pieces.find((p) => p.id === id)!.team))]
-    pushLog(s, `${name}: ${victims.map((t) => s.teams[t].name).join(', ')} 말을 잡았어! 한 번 더`)
+    pushLog(s, `${name}: ${victims.map((t) => s.teams[t].name).join(', ')} 말을 잡았어요! 한 번 더`)
     s.throwsLeft += 1
-  } else if (joined.length) pushLog(s, `${name}: 업었어! (${group.length + joined.length}동)`)
-  else pushLog(s, `${name}: ${RESULT_LABEL[result]}로 이동${count}`)
+  } else if (joined.length) pushLog(s, `${name}: 업었어요! (${group.length + joined.length}동)`)
+  else pushLog(s, `${name}: ${RESULT_LABEL[result]}${result === 'yut' ? '으로' : '로'} 이동했어요${count}`)
 
   if (s.pieces.filter((p) => p.team === s.turn).every((p) => p.pos === GOAL)) {
     s.winner = s.turn

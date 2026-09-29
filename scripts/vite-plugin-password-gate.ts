@@ -81,11 +81,11 @@ function loader(binUrl: string): string {
 const K='yutnori:pw';
 const deny=()=>{alert('비밀번호가 필요합니다');window.close();location.replace('about:blank')};
 let pw=null;try{pw=sessionStorage.getItem(K)}catch(e){}
-if(!pw)pw=prompt('비밀번호를 입력해줘');
+if(!pw)pw=prompt('비밀번호를 입력해 주세요');
 if(!pw)return deny();
 let buf;
 try{const r=await fetch(${JSON.stringify(binUrl)});if(!r.ok||/html/.test(r.headers.get('content-type')||''))throw 0;buf=new Uint8Array(await r.arrayBuffer())}
-catch(e){document.body.textContent='불러오기에 실패했어. 새로고침해줘.';return}
+catch(e){document.body.textContent='불러오지 못했어요. 새로고침해 주세요.';return}
 try{
 const s=crypto.subtle;
 const base=await s.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);

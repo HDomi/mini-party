@@ -32,6 +32,7 @@ export interface Backend {
   updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void>
   /** Atomic read-modify-write of the game. Return undefined from fn to abort. */
   transactGame(code: string, fn: (game: string | null) => string | null | undefined): Promise<boolean>
+  deleteRoom(code: string): Promise<void>
 }
 
 export const ROOM_TTL_MS = 12 * 60 * 60 * 1000

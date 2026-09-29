@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Home } from './ui/Home'
 import { Room } from './ui/Room'
-import { savedName } from './net'
+import { saveName, savedName } from './net'
 
 function codeFromHash(): string | null {
   const m = location.hash.match(/^#\/([A-Z0-9]{4})$/i)
@@ -18,7 +18,19 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  if (code && name) return <Room code={code} name={name} onLeave={() => (location.hash = '')} />
+  if (code && name) {
+    return (
+      <Room
+        code={code}
+        name={name}
+        onLeave={() => (location.hash = '')}
+        onRename={(next) => {
+          saveName(next)
+          setName(next)
+        }}
+      />
+    )
+  }
   return (
     <Home
       initialCode={code}
