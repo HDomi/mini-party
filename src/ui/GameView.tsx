@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { currentPlayer, groupOf, HOME, legalMoves, RESULT_LABEL, type GameState, type Team } from '../game/rules'
+import {
+  currentPlayer,
+  GOAL,
+  groupOf,
+  HOME,
+  legalMoves,
+  RESULT_LABEL,
+  RESULT_STEPS,
+  type Destination,
+  type GameState,
+  type Piece,
+  type Result,
+  type Team,
+} from '../game/rules'
 import { playerId } from '../net'
 import type { RoomApi } from '../net/useRoom'
 import { GameScene, type Preview } from '../scene/GameScene'
@@ -18,6 +31,14 @@ function usePortrait() {
 }
 
 const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+
+/** One way to move the picked piece: which pending result to spend and where it lands. */
+interface Option {
+  idx: number
+  result: Result
+  piece: Piece
+  dest: Destination
+}
 
 /** How long everyone else must stay offline before the last player wins. Covers reloads. */
 const LAST_STANDING_GRACE_MS = 15_000
@@ -39,7 +60,6 @@ export function GameView({
   const [mountSeq] = useState(game.seq)
   const [revealed, setRevealed] = useState(game.seq)
   const [banner, setBanner] = useState<{ seq: number; text: string; sub: string | null; color: string } | null>(null)
-  const [selIdx, setSelIdx] = useState(0)
   const [selPiece, setSelPiece] = useState<string | null>(null)
   const [hover, setHover] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -116,48 +136,46 @@ export function GameView({
   const pending = throwing ? game.pending.slice(0, -1) : game.pending
   const movePhase = canAct && game.phase === 'move' && !throwing
 
-  // Default to the first result that can actually move something.
-  const idx = useMemo(() => {
-    if (selIdx < game.pending.length && legalMoves(game, game.pending[selIdx]).length) return selIdx
-    const i = game.pending.findIndex((r) => legalMoves(game, r).length > 0)
-    return i < 0 ? 0 : i
-  }, [game, selIdx])
-
-  const legal = useMemo(() => (movePhase && game.pending[idx] ? legalMoves(game, game.pending[idx]) : []), [movePhase, game, idx])
+  // Every distinct pending result that can move something; duplicates share a destination.
+  const choices = useMemo(() => {
+    if (!movePhase) return []
+    const seen = new Set<Result>()
+    const out: { idx: number; result: Result; moves: ReturnType<typeof legalMoves> }[] = []
+    game.pending.forEach((result, idx) => {
+      if (seen.has(result)) return
+      seen.add(result)
+      const moves = legalMoves(game, result)
+      if (moves.length) out.push({ idx, result, moves })
+    })
+    return out
+  }, [movePhase, game])
 
   const movableIds = useMemo(() => {
     const ids = new Set<string>()
-    for (const { piece } of legal) {
-      if (piece.pos === HOME) game.pieces.filter((p) => p.team === piece.team && p.pos === HOME).forEach((p) => ids.add(p.id))
-      else groupOf(game, piece).forEach((p) => ids.add(p.id))
-    }
+    for (const { moves } of choices)
+      for (const { piece } of moves) {
+        if (piece.pos === HOME) game.pieces.filter((p) => p.team === piece.team && p.pos === HOME).forEach((p) => ids.add(p.id))
+        else groupOf(game, piece).forEach((p) => ids.add(p.id))
+      }
     return ids
-  }, [legal, game])
+  }, [choices, game])
 
-  const moveFor = useCallback(
-    (id: string | null) => {
-      if (!id) return null
-      const p = game.pieces.find((x) => x.id === id)
-      if (!p) return null
-      return legal.find((m) => m.piece.pos === p.pos && m.piece.team === p.team) ?? null
+  const optionsFor = useCallback(
+    (id: string | null): Option[] => {
+      const p = id ? game.pieces.find((x) => x.id === id) : undefined
+      if (!p) return []
+      const out: Option[] = []
+      for (const { idx, result, moves } of choices) {
+        const m = moves.find((mv) => mv.piece.pos === p.pos && mv.piece.team === p.team)
+        if (m) out.push({ idx, result, piece: m.piece, dest: m.dest })
+      }
+      return out
     },
-    [legal, game.pieces],
+    [choices, game.pieces],
   )
 
-  const focus = selPiece ?? hover
-  const focusMove = moveFor(focus)
-  const preview: Preview | null = focusMove
-    ? {
-        to: focusMove.dest.to,
-        color: team.color,
-        label: (() => {
-          const there = game.pieces.filter((p) => p.pos === focusMove.dest.to)
-          if (there.some((p) => p.team !== game.turn)) return '잡기!'
-          if (there.some((p) => p.team === game.turn && !groupOf(game, focusMove.piece).includes(p))) return '업기'
-          return RESULT_LABEL[game.pending[idx]]
-        })(),
-      }
-    : null
+  const selOptions = useMemo(() => optionsFor(selPiece), [optionsFor, selPiece])
+  const focusOptions = useMemo(() => optionsFor(selPiece ?? hover), [optionsFor, selPiece, hover])
 
   const run = async (fn: () => Promise<void>) => {
     if (busy) return
@@ -170,23 +188,79 @@ export function GameView({
   }
 
   const doThrow = () => run(() => api.act({ type: 'throw', by: playerId }, !myTurn))
-  const doMove = (pieceId: string) =>
-    run(() => api.act({ type: 'move', by: playerId, pendingIndex: idx, pieceId }, !myTurn))
+  const doMove = (pieceId: string, pendingIndex: number) =>
+    run(() => api.act({ type: 'move', by: playerId, pendingIndex, pieceId }, !myTurn))
+
+  const tagFor = (o: Option) => {
+    if (o.dest.to === GOAL) return '골인!'
+    const there = game.pieces.filter((p) => p.pos === o.dest.to)
+    if (there.some((p) => p.team !== game.turn)) return '잡기!'
+    if (there.some((p) => p.team === game.turn && !groupOf(game, o.piece).includes(p))) return '업기'
+    return null
+  }
+
+  // One marker per landing spot. Several results can reach the goal; the marker spends the smallest.
+  const previews: Preview[] = (() => {
+    const byDest = new Map<string, Option[]>()
+    for (const o of [...focusOptions].sort((a, b) => RESULT_STEPS[a.result] - RESULT_STEPS[b.result]))
+      byDest.set(o.dest.to, [...(byDest.get(o.dest.to) ?? []), o])
+    const many = focusOptions.length > 1
+    return [...byDest.values()].map((opts) => {
+      const o = opts[0]
+      const tag = tagFor(o)
+      const names = opts.map((x) => RESULT_LABEL[x.result]).join('/')
+      return {
+        key: o.dest.to,
+        to: o.dest.to,
+        color: team.color,
+        label: many ? (tag ? `${names} · ${tag}` : names) : (tag ?? names),
+        onConfirm: () => void doMove(o.piece.id, o.idx),
+      }
+    })
+  })()
+
+  const samePlace = (a: string | null, b: string) => {
+    const pa = game.pieces.find((p) => p.id === a)
+    const pb = game.pieces.find((p) => p.id === b)
+    return !!pa && !!pb && pa.team === pb.team && pa.pos === pb.pos
+  }
 
   const onPick = (id: string) => {
-    const m = moveFor(id)
-    if (!m) return
-    const sameGroup = selPiece && moveFor(selPiece) === m
-    if (canHover || sameGroup) void doMove(id)
+    const opts = optionsFor(id)
+    if (!opts.length) return
+    const same = samePlace(selPiece, id)
+    // A piece sitting on a shown destination (업기 target) means "go there", not "pick this one".
+    if (selPiece && !same) {
+      const pos = game.pieces.find((p) => p.id === id)?.pos
+      const target = selOptions.find((o) => o.dest.to === pos)
+      if (target) return void doMove(target.piece.id, target.idx)
+    }
+    if (opts.length > 1) {
+      setSelPiece(same ? null : id)
+      return
+    }
+    if (canHover || same) void doMove(opts[0].piece.id, opts[0].idx)
     else setSelPiece(id)
   }
 
   if (import.meta.env.DEV) {
     // test hook for driving the board from automation; stripped from production builds
-    ;(window as unknown as Record<string, unknown>).__yut = { game, legal, move: doMove }
+    ;(window as unknown as Record<string, unknown>).__yut = {
+      game,
+      legal: choices[0]?.moves ?? [],
+      choices,
+      move: (pieceId: string, pendingIndex = choices[0]?.idx ?? 0) => doMove(pieceId, pendingIndex),
+    }
   }
 
-  const homeMove = legal.find((m) => m.piece.pos === HOME)
+  const homePiece = game.pieces.find((p) => p.team === game.turn && p.pos === HOME)
+  const homeOptions = homePiece && movableIds.has(homePiece.id) ? optionsFor(homePiece.id) : []
+  const pickHome = () => {
+    if (!homePiece) return
+    if (homeOptions.length === 1) void doMove(homeOptions[0].piece.id, homeOptions[0].idx)
+    else setSelPiece(homePiece.id)
+  }
+  const picking = selOptions.length > 1
   const canThrow = canAct && game.phase === 'throw' && !throwing
 
   useEffect(() => {
@@ -215,9 +289,9 @@ export function GameView({
         selectedId={selPiece}
         onPick={onPick}
         onHover={(id) => canHover && setHover(id)}
-        preview={preview}
+        onMiss={() => setSelPiece(null)}
+        previews={previews}
         online={online}
-        onConfirm={() => focusMove && void doMove(focusMove.piece.id)}
       />
 
       <header className="hud-top">
@@ -253,19 +327,21 @@ export function GameView({
           )}
           {pending.length > 0 && (
             <div className="chips">
-              {pending.map((r, i) => (
-                <button
-                  key={`${i}-${r}`}
-                  className={`chip ${r}${movePhase && i === idx ? ' on' : ''}`}
-                  disabled={!movePhase}
-                  onClick={() => {
-                    setSelIdx(i)
-                    setSelPiece(null)
-                  }}
-                >
-                  {RESULT_LABEL[r]}
-                </button>
-              ))}
+              {pending.map((r, i) => {
+                const opt = picking ? selOptions.find((o) => o.result === r) : undefined
+                const tag = opt && tagFor(opt)
+                return (
+                  <button
+                    key={`${i}-${r}`}
+                    className={`chip ${r}${opt ? ' on' : ''}`}
+                    disabled={!opt || busy}
+                    onClick={() => opt && void doMove(opt.piece.id, i)}
+                  >
+                    {RESULT_LABEL[r]}
+                    {tag && <small>{tag}</small>}
+                  </button>
+                )
+              })}
             </div>
           )}
 
@@ -276,11 +352,23 @@ export function GameView({
             </button>
           ) : movePhase ? (
             <div className="move-help">
-              <p>{canHover ? '움직일 말을 눌러 주세요' : '말을 고른 뒤 한 번 더 눌러 주세요'}</p>
-              {homeMove && (
-                <button className="btn primary" onClick={() => doMove(homeMove.piece.id)} disabled={busy}>
-                  새 말 내기
+              <p>
+                {picking
+                  ? '몇 칸 갈지 골라 주세요'
+                  : selPiece
+                    ? '한 번 더 누르면 이동해요'
+                    : '움직일 말을 눌러 주세요'}
+              </p>
+              {selPiece ? (
+                <button className="btn" onClick={() => setSelPiece(null)}>
+                  취소
                 </button>
+              ) : (
+                homeOptions.length > 0 && (
+                  <button className="btn primary" onClick={pickHome} disabled={busy}>
+                    새 말 내기
+                  </button>
+                )
               )}
             </div>
           ) : (

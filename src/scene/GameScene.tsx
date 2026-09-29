@@ -12,24 +12,26 @@ import { Trays } from './Trays'
 import { YutSticks } from './YutSticks'
 
 export interface Preview {
+  key: string
   to: string
-  label: string | null
+  label: string
   color: string
+  onConfirm: () => void
 }
 
 interface Props extends Omit<PiecesProps, 'game' | 'portrait'> {
   game: GameState
   portrait: boolean
-  preview: Preview | null
+  previews: Preview[]
   online: Record<string, boolean>
-  onConfirm: () => void
+  onMiss: () => void
 }
 
 // Retina at 2x with MSAA quadruples the framebuffers; 1.5x looks the same on this scene.
 const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
 
 export function GameScene(props: Props) {
-  const { game, portrait, preview, online, onConfirm, ...pieceProps } = props
+  const { game, portrait, previews, online, onMiss, ...pieceProps } = props
   // Drop to 1x for good once the device can't keep up; one step so buffers aren't reallocated back and forth.
   const [dpr, setDpr] = useState(MAX_DPR)
   return (
@@ -39,7 +41,10 @@ export function GameScene(props: Props) {
       dpr={dpr}
       camera={{ fov: 36, position: [0, 20, 14], near: 0.5, far: 200 }}
       gl={{ antialias: true, alpha: true }}
-      onPointerMissed={() => pieceProps.onHover(null)}
+      onPointerMissed={() => {
+        pieceProps.onHover(null)
+        onMiss()
+      }}
     >
       <PerformanceMonitor onDecline={() => setDpr(1)} />
       <Lights layoutKey={`${portrait}-${game.teams.length}`} />
@@ -48,7 +53,9 @@ export function GameScene(props: Props) {
         <Board />
         <Trays game={game} portrait={portrait} online={online} />
         <Pieces game={game} portrait={portrait} {...pieceProps} />
-        {preview && <DestMarker preview={preview} onConfirm={onConfirm} />}
+        {previews.map((p) => (
+          <DestMarker key={p.key} preview={p} />
+        ))}
         <YutSticks event={game.event} mountSeq={pieceProps.mountSeq} />
       </ShakeGroup>
     </Canvas>
@@ -130,7 +137,7 @@ function CameraRig({ portrait }: { portrait: boolean }) {
   )
 }
 
-function DestMarker({ preview, onConfirm }: { preview: Preview; onConfirm: () => void }) {
+function DestMarker({ preview }: { preview: Preview }) {
   const ref = useRef<THREE.Group>(null)
   const node = preview.to === GOAL ? 'O0' : preview.to
   const pos: Vec3 = nodePos(node, BOARD_TOP + 0.03)
@@ -144,13 +151,17 @@ function DestMarker({ preview, onConfirm }: { preview: Preview; onConfirm: () =>
       <group ref={ref}>
         <mesh
           rotation-x={-Math.PI / 2}
+          visible={false}
           onClick={(e) => {
             e.stopPropagation()
-            onConfirm()
+            preview.onConfirm()
           }}
           onPointerOver={() => (document.body.style.cursor = 'pointer')}
           onPointerOut={() => (document.body.style.cursor = '')}
         >
+          <circleGeometry args={[0.95, 24]} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2}>
           <circleGeometry args={[0.72, 40]} />
           <meshBasicMaterial color={preview.color} transparent opacity={0.35} depthWrite={false} />
         </mesh>
@@ -161,7 +172,7 @@ function DestMarker({ preview, onConfirm }: { preview: Preview; onConfirm: () =>
       </group>
       <SafeHtml center position={[0, 1.1, 0]} style={{ pointerEvents: 'none' }}>
         <span className="dest-label" style={{ background: preview.color }}>
-          {preview.to === GOAL ? '골인!' : (preview.label ?? '여기로')}
+          {preview.label}
         </span>
       </SafeHtml>
     </group>

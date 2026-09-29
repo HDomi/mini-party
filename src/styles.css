@@ -594,6 +594,12 @@ input {
 .chip:disabled:not(.on) {
   opacity: 0.85;
 }
+.chip small {
+  display: block;
+  font-size: 12px;
+  line-height: 1;
+  margin-top: 2px;
+}
 
 .throw-btn {
   position: relative;
