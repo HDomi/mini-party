@@ -34,10 +34,18 @@ jobs:
       - run: npm test
 
       - name: Build
-        run: npm run build
+        run: |
+          # Without the key the bundle would talk to a path the database rules keep closed.
+          if [ -n "$VITE_FIREBASE_DATABASE_URL" ] && ! printf '%s' "$VITE_DB_KEY" | grep -Eq '^[A-Za-z0-9_-]{16,128}$'; then
+            echo "::error::DB_KEY secret is missing or not 16-128 chars of A-Z a-z 0-9 _ -"
+            exit 1
+          fi
+          npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL || vars.FIREBASE_DATABASE_URL }}
+          # Inlined into the bundle, which the password gate encrypts.
+          VITE_DB_KEY: ${{ secrets.DB_KEY }}
           # Build-time only: encrypts the bundle. Not VITE_-prefixed, so it is never inlined.
           PLAY_PW: ${{ secrets.PLAY_PW }}
 

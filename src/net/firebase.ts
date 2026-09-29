@@ -12,22 +12,24 @@ import {
   update,
   type Database,
 } from 'firebase/database'
+import { roomsRoot } from './paths'
 import { ROOM_TTL_MS, type Backend, type RoomData } from './types'
 
-const ROOT = 'yutnori/rooms'
 /** Grace period before closing the socket, so back-to-back holds (Home -> room, rename re-join) don't bounce it. */
 const IDLE_CLOSE_MS = 2000
 
 export class FirebaseBackend implements Backend {
   readonly kind = 'firebase' as const
   private db: Database
+  private root: string
 
   // Listeners, seats and in-flight writes each hold the connection. The socket closes once the last
   // one lets go, so tabs sitting on Home don't count against the concurrent-connection quota.
   private holds = 0
   private idleTimer: ReturnType<typeof setTimeout> | undefined
 
-  constructor(databaseURL: string) {
+  constructor(databaseURL: string, key: string | undefined) {
+    this.root = roomsRoot(key)
     const app = initializeApp({ databaseURL })
     this.db = getDatabase(app)
   }
@@ -55,7 +57,7 @@ export class FirebaseBackend implements Backend {
   subscribe(code: string, cb: (room: RoomData | null) => void, onError?: (err: Error) => void) {
     this.hold()
     const unsub = onValue(
-      ref(this.db, `${ROOT}/${code}`),
+      ref(this.db, `${this.root}/${code}`),
       (snap) => cb(snap.val()),
       (err) => onError?.(err),
     )
@@ -70,7 +72,7 @@ export class FirebaseBackend implements Backend {
 
   createRoom(code: string, room: RoomData) {
     return this.held(async () => {
-      const res = await runTransaction(ref(this.db, `${ROOT}/${code}`), (cur: RoomData | null) => {
+      const res = await runTransaction(ref(this.db, `${this.root}/${code}`), (cur: RoomData | null) => {
         if (cur && Date.now() - cur.createdAt < ROOM_TTL_MS) return undefined
         return room
       })
@@ -79,8 +81,8 @@ export class FirebaseBackend implements Backend {
   }
 
   join(code: string, player: Parameters<Backend['join']>[1], onError?: (err: Error) => void) {
-    const roomRef = ref(this.db, `${ROOT}/${code}`)
-    const playerRef = ref(this.db, `${ROOT}/${code}/players/${player.id}`)
+    const roomRef = ref(this.db, `${this.root}/${code}`)
+    const playerRef = ref(this.db, `${this.root}/${code}/players/${player.id}`)
     this.hold()
     const unsub = onValue(
       ref(this.db, '.info/connected'),
@@ -130,21 +132,21 @@ export class FirebaseBackend implements Backend {
   }
 
   updatePlayer(code: string, id: string, patch: object) {
-    return this.held(() => update(ref(this.db, `${ROOT}/${code}/players/${id}`), patch))
+    return this.held(() => update(ref(this.db, `${this.root}/${code}/players/${id}`), patch))
   }
 
   updateSettings(code: string, patch: object) {
-    return this.held(() => update(ref(this.db, `${ROOT}/${code}/settings`), patch))
+    return this.held(() => update(ref(this.db, `${this.root}/${code}/settings`), patch))
   }
 
   transactGame(code: string, fn: (game: string | null) => string | null | undefined) {
     return this.held(async () => {
-      const res = await runTransaction(ref(this.db, `${ROOT}/${code}/game`), (cur: string | null) => fn(cur ?? null))
+      const res = await runTransaction(ref(this.db, `${this.root}/${code}/game`), (cur: string | null) => fn(cur ?? null))
       return res.committed
     })
   }
 
   deleteRoom(code: string) {
-    return this.held(() => remove(ref(this.db, `${ROOT}/${code}`)))
+    return this.held(() => remove(ref(this.db, `${this.root}/${code}`)))
   }
 }

@@ -3,12 +3,13 @@
 //
 //   FIREBASE_SERVICE_ACCOUNT_JSON  service account key (the whole JSON)
 //   FIREBASE_DATABASE_URL          https://<instance>.firebaseio.com
+//   DB_KEY                         secret path segment, same value as the client's VITE_DB_KEY
 //   DRY_RUN=true                   list what would be deleted, delete nothing
 import { createSign } from 'node:crypto'
+import { roomsRoot } from '../src/net/paths.ts'
 import { isRoomIdle, ROOM_IDLE_MS } from '../src/net/sweep.ts'
 import type { RoomData } from '../src/net/types.ts'
 
-const ROOT = 'yutnori/rooms'
 const BATCH = 200
 
 interface ServiceAccount {
@@ -49,12 +50,13 @@ async function accessToken(sa: ServiceAccount): Promise<string> {
 async function main() {
   const sa = JSON.parse(env('FIREBASE_SERVICE_ACCOUNT_JSON')) as ServiceAccount
   const base = env('FIREBASE_DATABASE_URL').replace(/\/+$/, '')
+  const ROOT = roomsRoot(env('DB_KEY'))
   const dryRun = process.env.DRY_RUN === 'true'
   const auth = { Authorization: `Bearer ${await accessToken(sa)}` }
   const now = Date.now()
 
   // Rooms without `lastSeen` sort first, so this also picks up old rooms and stubs.
-  // Needs `.indexOn: ["lastSeen"]` on /yutnori/rooms, or the server answers 400.
+  // Needs `.indexOn: ["lastSeen"]` on /yutnori/$key/rooms, or the server answers 400.
   const query = new URLSearchParams({
     orderBy: JSON.stringify('lastSeen'),
     endAt: String(now - ROOM_IDLE_MS),

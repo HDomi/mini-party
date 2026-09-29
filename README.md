@@ -21,6 +21,7 @@ To try against a real database, create `.env.local`:
 
 ```
 VITE_FIREBASE_DATABASE_URL=https://<instance>.firebaseio.com
+VITE_DB_KEY=<same value as /yutnori_key in the database>
 ```
 
 ## Deploy
@@ -32,9 +33,10 @@ Repository settings:
 - Settings → Pages → Source: **GitHub Actions**
 - Secrets (repo or `github-pages` environment):
   - `FIREBASE_DATABASE_URL` — RTDB URL (ends up in the bundle, but encrypted)
+  - `DB_KEY` — secret path segment for rooms (ends up in the bundle, but encrypted). Repo-level, since the sweep job needs it too. See [Database rules](#database-rules)
   - `PLAY_PW` — entry password, build-time only
 
-The build fails if `PLAY_PW` is empty on CI, and also fails if the password string shows up anywhere in `dist/`.
+The build fails if `PLAY_PW` is empty on CI, if the password string shows up anywhere in `dist/`, or if `DB_KEY` is missing or malformed.
 
 ## Room cleanup
 
@@ -46,6 +48,7 @@ The sweep job doesn't use the `github-pages` environment, so it needs **repo-lev
 
 - `FIREBASE_SERVICE_ACCOUNT_JSON` — service account key JSON (Firebase console → Project settings → Service accounts → Generate new private key)
 - `FIREBASE_DATABASE_URL` — same as above (a repo-level secret or variable)
+- `DB_KEY` — same as above
 
 GitHub pauses scheduled workflows after 60 days without repo activity; re-enable it from the Actions tab if that happens.
 
@@ -67,26 +70,48 @@ Outside a room the client closes its RTDB socket (`goOffline`) two seconds after
 
 Limits:
 
-- The gate protects the page, not the database. Anyone who has the RTDB URL can read/write `/yutnori/rooms`. Keep the rules scoped to that path.
+- The gate protects the page, and through `DB_KEY` also the database: rooms live under `/yutnori/{DB_KEY}/rooms`, and the rules only open that path. Anyone who can decrypt the bundle (i.e. knows the password) can still pull the key out of it and write to any room.
 - The ciphertext is public, so a short password can be brute-forced offline. Use a long one.
 
 ## Database rules
 
-The game only touches `/yutnori/rooms/{CODE}`. The `lastSeen` index is required by the room sweeper (its query fails without it). Add this block inside the existing `"rules"` object without replacing other paths:
+Rooms live at `/yutnori/{DB_KEY}/rooms/{CODE}`. The rules compare the path segment with `/yutnori_key`, which no client can read, so without the key nothing under `/yutnori` is readable or writable. The key ships in the bundle, which the password gate encrypts. The sweeper uses a service account and bypasses the rules.
+
+Setup, in this order so the live site keeps working during the switch:
+
+1. Generate a key: `openssl rand -hex 24` (16–128 chars of `A-Z a-z 0-9 _ -`).
+2. Add it as the repo-level secret `DB_KEY`, and to `.env.local` as `VITE_DB_KEY` for local testing.
+3. Firebase console → Realtime Database → Data: add a root child `yutnori_key` with the key as a string value.
+4. Publish these rules. For now keep the old `"rooms": { ... }` entry inside `"yutnori"` next to `"$key"` (a named child wins over the wildcard), so the currently deployed build keeps working. Leave other paths as they are:
 
 ```json
+"yutnori_key": { ".read": false, ".write": false },
 "yutnori": {
-  "rooms": {
-    ".indexOn": ["lastSeen"],
-    "$code": {
-      ".read": true,
-      ".write": true,
-      ".validate": "$code.matches(/^[A-Z0-9]{4}$/) && newData.hasChildren(['createdAt', 'hostId'])",
-      "game": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 20000)" }
+  "$key": {
+    "rooms": {
+      ".indexOn": ["lastSeen"],
+      "$code": {
+        ".read": "$key === root.child('yutnori_key').val()",
+        ".write": "$key === root.child('yutnori_key').val()",
+        ".validate": "$code.matches(/^[A-Z0-9]{4}$/) && newData.hasChildren(['createdAt', 'hostId'])",
+        "players": {
+          "$pid": {
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" }
+          }
+        },
+        "game": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 20000)" }
+      }
     }
   }
 }
 ```
+
+5. Push to `main` and wait for the deploy.
+6. Remove the old `rooms` entry from the rules and delete the `/yutnori/rooms` data. Nothing reads it any more and the sweeper no longer looks there.
+
+Names are capped at 10 characters in the UI. The rule allows 20 so emoji and other surrogate pairs don't get rejected; it only exists to stop oversized junk.
+
+To rotate the key (e.g. it leaked): change `yutnori_key` and the `DB_KEY` secret, then redeploy. Open rooms are lost.
 
 ## Layout
 

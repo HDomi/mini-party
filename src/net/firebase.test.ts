@@ -24,6 +24,7 @@ vi.mock('firebase/database', () => ({
 
 const { FirebaseBackend } = await import('./firebase')
 
+const KEY = 'test-key-0123456789'
 const player = { id: 'a', name: 'a', team: 0, online: true, joinedAt: 0 }
 
 async function settle() {
@@ -41,7 +42,7 @@ describe('FirebaseBackend connection', () => {
   afterEach(() => vi.useRealTimers())
 
   it('goes offline shortly after the last listener leaves', async () => {
-    const b = new FirebaseBackend('https://x')
+    const b = new FirebaseBackend('https://x', KEY)
     const unsub = b.subscribe('ABCD', () => {})
     expect(db.goOnline).toHaveBeenCalledTimes(1)
     unsub()
@@ -53,7 +54,7 @@ describe('FirebaseBackend connection', () => {
   })
 
   it('stays online until the leave write lands', async () => {
-    const b = new FirebaseBackend('https://x')
+    const b = new FirebaseBackend('https://x', KEY)
     const stop = b.join('ABCD', player)
     stop(true)
     await vi.advanceTimersByTimeAsync(10_000)
@@ -64,7 +65,7 @@ describe('FirebaseBackend connection', () => {
   })
 
   it('does not bounce the socket on a rename re-join', async () => {
-    const b = new FirebaseBackend('https://x')
+    const b = new FirebaseBackend('https://x', KEY)
     const unsub = b.subscribe('ABCD', () => {})
     b.join('ABCD', player)(false)
     b.join('ABCD', { ...player, name: 'b' })
@@ -78,7 +79,7 @@ describe('FirebaseBackend connection', () => {
   })
 
   it('holds the connection for a write made from Home', async () => {
-    const b = new FirebaseBackend('https://x')
+    const b = new FirebaseBackend('https://x', KEY)
     const created = b.createRoom('ABCD', { createdAt: 0, hostId: 'a', settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 } })
     await vi.advanceTimersByTimeAsync(5000)
     expect(db.goOffline).not.toHaveBeenCalled()

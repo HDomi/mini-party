@@ -20,7 +20,7 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    # No `environment:` here, so both secrets must be repo-level (an environment would log a deployment every hour).
+    # No `environment:` here, so these secrets must be repo-level (an environment would log a deployment every hour).
     steps:
       - uses: actions/checkout@v4
 
@@ -33,4 +33,5 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL || vars.FIREBASE_DATABASE_URL }}
+          DB_KEY: ${{ secrets.DB_KEY }}
           DRY_RUN: ${{ inputs.dry_run }}

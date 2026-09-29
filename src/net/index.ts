@@ -3,8 +3,9 @@ import { LocalBackend } from './local'
 import type { Backend } from './types'
 
 const url = import.meta.env.VITE_FIREBASE_DATABASE_URL as string | undefined
+const key = import.meta.env.VITE_DB_KEY as string | undefined
 
-export const backend: Backend = url ? new FirebaseBackend(url) : new LocalBackend()
+export const backend: Backend = url ? new FirebaseBackend(url, key) : new LocalBackend()
 
 const idStore = backend.kind === 'local' ? sessionStorage : localStorage
 
