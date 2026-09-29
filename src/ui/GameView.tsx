@@ -112,6 +112,8 @@ export function GameView({
     if (event.type !== 'throw' || event.seq <= revealed) return
     const t = window.setTimeout(() => {
       setRevealed(event.seq)
+      // The next throw's result matters more than the splash from the last capture.
+      setCaught(null)
       const skipped = currentPlayer(game) !== event.by
       const thrower = game.teams.find((tm) => tm.members.includes(event.by))
       setBanner({
