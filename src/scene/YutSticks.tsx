@@ -56,6 +56,13 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
     }),
     [tex],
   )
+  useEffect(
+    () => () => {
+      for (const m of Object.values(mats)) m.dispose()
+      for (const t of Object.values(tex)) t.dispose()
+    },
+    [mats, tex],
+  )
 
   const refs = useRef<(THREE.Group | null)[]>([])
   const root = useRef<THREE.Group>(null)

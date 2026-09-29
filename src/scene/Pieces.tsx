@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber'
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { GOAL, type GameState, type Piece } from '../game/rules'
 import { SafeHtml } from './SafeHtml'
@@ -17,6 +17,7 @@ interface Plan {
 }
 
 const HOP = 0.26
+const scratch = new THREE.Vector3()
 
 const bodyGeometry = (() => {
   const pts = [
@@ -185,6 +186,7 @@ function PieceView(props: {
       }),
     [color],
   )
+  useEffect(() => () => material.dispose(), [material])
 
   useFrame((state, dt) => {
     const g = group.current
@@ -196,12 +198,12 @@ function PieceView(props: {
         const hop = a.hops[a.i]
         a.t += dt / hop.dur
         const k = Math.min(a.t, 1)
-        const to = new THREE.Vector3(...hop.to)
+        const to = scratch.set(...hop.to)
         cur.current.lerpVectors(a.from, to, ease(k))
         cur.current.y += Math.sin(Math.PI * k) * hop.arc
         if (k >= 1) {
           cur.current.copy(to)
-          a.from = to
+          a.from.copy(to)
           a.i += 1
           a.t = 0
           squash.current = 1

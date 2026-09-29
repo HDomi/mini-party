@@ -32,10 +32,14 @@ export const Impacts = forwardRef<ImpactsHandle>(function Impacts(_, ref) {
     [],
   )
   const nextDust = useRef(0)
+  // Seconds since the last hit; once every effect has faded the per-frame work stops.
+  // Starts at 0 so the first frames zero out the default identity instance matrices.
+  const idle = useRef(0)
   const tmp = useMemo(() => new THREE.Object3D(), [])
 
   useImperativeHandle(ref, () => ({
     hit(x, z, strength) {
+      idle.current = 0
       const i = nextRing.current++ % RINGS
       ringState.current[i] = { t: 0, s: strength }
       rings.current[i]?.position.set(x, BOARD_TOP + 0.015, z)
@@ -53,6 +57,9 @@ export const Impacts = forwardRef<ImpactsHandle>(function Impacts(_, ref) {
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05)
+    // one extra frame past the lifetime so the last instances get zeroed
+    if (idle.current > Math.max(RING_LIFE, DUST_LIFE) + 0.1) return
+    idle.current += dt
     ringState.current.forEach((st, i) => {
       const m = rings.current[i]
       if (!m) return

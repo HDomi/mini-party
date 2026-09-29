@@ -8,6 +8,9 @@ export function Board() {
   const [top, setTop] = useState<THREE.CanvasTexture | null>(null)
   const mat = useMemo(() => matTexture(), [])
 
+  useEffect(() => () => mat.dispose(), [mat])
+  useEffect(() => () => top?.dispose(), [top])
+
   useEffect(() => {
     let alive = true
     // The start label uses Jua; wait so the canvas doesn't fall back to a system font.

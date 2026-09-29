@@ -1,6 +1,6 @@
-import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GOAL, type GameState } from '../game/rules'
 import { Board } from './Board'
@@ -25,18 +25,24 @@ interface Props extends Omit<PiecesProps, 'game' | 'portrait'> {
   onConfirm: () => void
 }
 
+// Retina at 2x with MSAA quadruples the framebuffers; 1.5x looks the same on this scene.
+const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
+
 export function GameScene(props: Props) {
   const { game, portrait, preview, online, onConfirm, ...pieceProps } = props
+  // Drop to 1x for good once the device can't keep up; one step so buffers aren't reallocated back and forth.
+  const [dpr, setDpr] = useState(MAX_DPR)
   return (
     <Canvas
       className="scene"
       shadows="percentage"
-      dpr={[1, 2]}
+      dpr={dpr}
       camera={{ fov: 36, position: [0, 20, 14], near: 0.5, far: 200 }}
       gl={{ antialias: true, alpha: true }}
       onPointerMissed={() => pieceProps.onHover(null)}
     >
-      <Lights />
+      <PerformanceMonitor onDecline={() => setDpr(1)} />
+      <Lights layoutKey={`${portrait}-${game.teams.length}`} />
       <CameraRig portrait={portrait} />
       <ShakeGroup>
         <Board />
@@ -49,7 +55,11 @@ export function GameScene(props: Props) {
   )
 }
 
-export function Lights() {
+/**
+ * Contact shadows only cover the static board and trays, so they are baked once
+ * per layout instead of re-rendered every frame. Pieces get the directional shadow.
+ */
+export function Lights({ layoutKey = '' }: { layoutKey?: string }) {
   return (
     <>
       <hemisphereLight args={['#fff6e6', '#b98a5a', 0.9]} />
@@ -58,7 +68,7 @@ export function Lights() {
         intensity={2.1}
         color="#fff1dc"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-14}
         shadow-camera-right={14}
         shadow-camera-top={14}
@@ -71,7 +81,16 @@ export function Lights() {
         <Lightformer form="circle" intensity={1.4} color="#ffd6a8" position={[-8, 4, -2]} scale={5} />
         <Lightformer form="circle" intensity={1.1} color="#b8d8ff" position={[8, 3, -4]} scale={4} />
       </Environment>
-      <ContactShadows position={[0, 0.01, 0]} scale={34} blur={2.6} opacity={0.35} far={6} resolution={512} />
+      <ContactShadows
+        key={layoutKey}
+        frames={1}
+        position={[0, 0.01, 0]}
+        scale={34}
+        blur={2.6}
+        opacity={0.35}
+        far={6}
+        resolution={512}
+      />
     </>
   )
 }
