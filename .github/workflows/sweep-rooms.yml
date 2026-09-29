@@ -20,7 +20,7 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    # No `environment:` here, so these secrets must be repo-level (an environment would log a deployment every hour).
+    # 여기엔 `environment:`가 없으므로 secret은 저장소 수준이어야 한다(environment를 쓰면 매시간 deployment가 기록된다).
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 24
 
-      # Node runs the .ts directly (type stripping); the script has no npm deps.
+      # Node가 .ts를 직접 실행한다(type stripping). 스크립트에 npm 의존성은 없다.
       - run: node scripts/sweep-rooms.ts
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}

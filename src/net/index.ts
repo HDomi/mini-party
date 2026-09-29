@@ -21,7 +21,7 @@ function stored(storage: Storage, k: string, make: () => string): string {
   }
 }
 
-/** Stable per-browser id (per-tab with the local backend, so tabs act as players). */
+/** 브라우저별로 고정된 id(local backend에서는 탭별이라 탭마다 다른 플레이어가 된다). */
 export const playerId = stored(idStore, 'yutnori:pid', () => crypto.randomUUID().slice(0, 12))
 
 export function savedName(): string {
@@ -36,7 +36,7 @@ export function saveName(name: string) {
   try {
     localStorage.setItem('yutnori:name', name)
   } catch {
-    /* ignore */
+    /* 무시 */
   }
 }
 

@@ -1,4 +1,4 @@
-// Yut board graph: 20 outer stations + 2 diagonals crossing the center (29 total).
+// 윷판 그래프: 바깥 칸 20개 + 중앙에서 교차하는 대각선 2개 (총 29칸).
 //
 //   O10 O9  O8  O7  O6  O5
 //   O11 L1              R1  O4
@@ -6,9 +6,9 @@
 //               C
 //   O13     F1      E1      O2
 //   O14 F2              E2  O1
-//   O15 O16 O17 O18 O19 O0   <- O0 is the start/finish (참먹이)
+//   O15 O16 O17 O18 O19 O0   <- O0 이 출발/도착 지점 (참먹이)
 //
-// Pieces travel counter-clockwise. Stopping on O5 / O10 / C takes the shortcut.
+// 말은 반시계 방향으로 움직인다. O5 / O10 / C 에 멈추면 지름길로 간다.
 
 export type NodeId = string
 
@@ -65,7 +65,7 @@ const LINEAR_NEXT: Record<NodeId, NodeId> = {
   E2: 'O0',
 }
 
-/** Next station when moving forward one step. `first` = the first step of this move. */
+/** 한 칸 앞으로 갈 때의 다음 칸. `first` = 이번 이동의 첫 걸음인지 여부. */
 export function nextNode(cur: NodeId, prev: NodeId | undefined, first: boolean): NodeId {
   if (first) {
     if (cur === 'O5') return 'R1'
@@ -78,7 +78,7 @@ export function nextNode(cur: NodeId, prev: NodeId | undefined, first: boolean):
   return `O${(i + 1) % 20}`
 }
 
-/** Fallback for 빽도 when the piece has no recorded trail. */
+/** 말에 기록된 trail 이 없을 때의 빽도 대체 처리. */
 export function defaultPrev(cur: NodeId): NodeId {
   const map: Record<NodeId, NodeId> = {
     R1: 'O5',

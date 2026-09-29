@@ -18,13 +18,13 @@ export function Room({
   const api = useRoom(code, name)
   const [forfeit, setForfeit] = useState<{ teamName: string; color: string } | null>(null)
 
-  // 한 판 더 swaps in a fresh game (seq restarts at 1) without leaving this screen. The board keys its
-  // reveal/animation bookkeeping on seq, so remount it whenever seq goes backwards.
+  // 한 판 더는 이 화면을 떠나지 않고 새 게임으로 바꿔 끼운다 (seq 는 1부터 다시 시작). 보드는
+  // 공개/애니메이션 관리를 seq 기준으로 하므로 seq 가 뒤로 갈 때마다 다시 마운트한다.
   const seq = api.game?.seq ?? 0
   const [board, setBoard] = useState({ round: 0, seq })
   if (seq !== board.seq) setBoard({ round: seq < board.seq ? board.round + 1 : board.round, seq })
 
-  // Checked first: the room is deleted right after this is set.
+  // 먼저 확인한다: 이 값이 설정된 직후 방이 삭제된다.
   if (forfeit) return <ForfeitWin {...forfeit} onLeave={onLeave} />
 
   if (api.connError) {

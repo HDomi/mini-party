@@ -1,16 +1,16 @@
-// Sound effects. Volume starts at 0 (muted) and is remembered per browser.
-// Files live in public/sfx as `<name>-<n>.ogg|m4a`; see public/sfx/CREDITS.txt.
-// Background music is disabled until we find a track worth using: the `bgm` blocks below are
-// commented out, and dropping a looping file at BGM_URL plus uncommenting them turns it back on.
+// 효과음. 볼륨은 0(음소거)에서 시작하고 브라우저별로 기억된다.
+// 파일은 public/sfx 에 `<name>-<n>.ogg|m4a` 형식으로 있다. public/sfx/CREDITS.txt 참고.
+// 쓸 만한 곡을 찾을 때까지 배경음악은 꺼 둔다: 아래 `bgm` 블록은 주석 처리돼 있고,
+// BGM_URL 에 반복 재생용 파일을 두고 주석을 풀면 다시 켜진다.
 
 const BASE = `${import.meta.env.BASE_URL}sfx/`
-// Safari decodes AAC but not always Vorbis, so every effect ships in both.
+// Safari 는 AAC 는 디코딩하지만 Vorbis 는 항상 되지는 않으므로, 모든 효과음을 두 형식으로 둔다.
 const EXT = typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'm4a'
 // const BGM_URL = `${BASE}bgm.mp3`
 // const BGM_GAIN = 0.35
 const KEY = 'yutnori:volume'
 
-/** `n` variants per sound, picked at random so repeats don't sound mechanical. */
+/** 소리마다 `n` 개의 변형을 두고, 반복이 기계적으로 들리지 않도록 무작위로 고른다. */
 const SOUNDS = {
   throw: { n: 3, gain: 0.7 },
   land: { n: 5, gain: 0.9 },
@@ -42,7 +42,7 @@ function readVolume(): number {
   }
 }
 
-// Loudness feels closer to linear on a squared curve.
+// 제곱 곡선을 쓰면 체감 음량이 선형에 더 가깝다.
 const curve = (v: number) => v * v
 
 export function getVolume() {
@@ -59,14 +59,14 @@ export function setVolume(v: number) {
   try {
     localStorage.setItem(KEY, String(volume))
   } catch {
-    /* ignore */
+    /* 무시 */
   }
   listeners.forEach((fn) => fn())
-  // Called from a drag or click, so this is also where browsers let audio start.
+  // 드래그나 클릭에서 호출되므로, 브라우저가 오디오 시작을 허용하는 곳도 여기다.
   unlock()
 }
 
-/** Needs a user gesture: browsers keep audio suspended until then. */
+/** 사용자 제스처가 필요하다: 그 전까지 브라우저는 오디오를 suspended 상태로 둔다. */
 function unlock() {
   if (volume === 0) {
     // bgm?.pause()
@@ -107,7 +107,7 @@ function load(url: string) {
 
 export function play(name: SoundName, gain = 1) {
   if (volume === 0 || !ctx || !master || ctx.state !== 'running') return
-  // test hook for automation; stripped from production builds
+  // 자동화용 테스트 훅. 프로덕션 빌드에서는 제거된다
   if (import.meta.env.DEV) ((window as unknown as { __sfx?: string[] }).__sfx ??= []).push(name)
   const s = SOUNDS[name]
   const url = `${BASE}${name}-${1 + Math.floor(Math.random() * s.n)}.${EXT}`
@@ -124,7 +124,7 @@ export function play(name: SoundName, gain = 1) {
 }
 
 if (typeof document !== 'undefined') {
-  // A saved volume can't start audio on load; the first tap anywhere does.
+  // 저장된 볼륨만으로는 로드 시 오디오를 시작할 수 없다. 어디든 처음 탭하면 시작된다.
   for (const type of ['pointerdown', 'keydown']) document.addEventListener(type, unlock, { capture: true })
   document.addEventListener('click', (e) => {
     if ((e.target as Element | null)?.closest?.('button')) play('click')

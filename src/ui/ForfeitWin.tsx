@@ -2,7 +2,7 @@ import { useEffect, type CSSProperties } from 'react'
 import { Backdrop } from './Backdrop'
 import { celebrateWin } from './effects'
 
-/** Shown to the last player left in a running game. The room is already deleted. */
+/** 진행 중인 게임에 마지막으로 남은 플레이어에게 보여준다. 방은 이미 삭제된 상태다. */
 export function ForfeitWin({ teamName, color, onLeave }: { teamName: string; color: string; onLeave: () => void }) {
   useEffect(() => celebrateWin(color), [color])
   return (

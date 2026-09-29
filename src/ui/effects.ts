@@ -7,7 +7,7 @@ function palette(color: string) {
   return [color, '#ffd35a', '#ffffff', '#ff8fa3', '#8fd3ff']
 }
 
-/** Burst for 윷 and 모; 모 gets side cannons and stars on top. */
+/** 윷과 모의 폭죽. 모는 여기에 양옆 대포와 별이 더해진다. */
 export function celebrateThrow(result: Result, color: string) {
   const colors = palette(color)
   if (result === 'yut') {
@@ -23,7 +23,7 @@ export function celebrateThrow(result: Result, color: string) {
   }, 180)
 }
 
-/** Keeps firing from both sides for a few seconds. Returns a cancel fn. */
+/** 몇 초 동안 양쪽에서 계속 쏜다. 취소 함수를 반환한다. */
 export function celebrateWin(color: string): () => void {
   const colors = palette(color)
   const end = Date.now() + 3200

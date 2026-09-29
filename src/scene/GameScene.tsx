@@ -27,12 +27,12 @@ interface Props extends Omit<PiecesProps, 'game' | 'portrait'> {
   onMiss: () => void
 }
 
-// Retina at 2x with MSAA quadruples the framebuffers; 1.5x looks the same on this scene.
+// 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 이 씬에서는 1.5x 도 똑같아 보인다.
 const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
 
 export function GameScene(props: Props) {
   const { game, portrait, previews, online, onMiss, ...pieceProps } = props
-  // Drop to 1x for good once the device can't keep up; one step so buffers aren't reallocated back and forth.
+  // 기기가 버티지 못하면 1x 로 영구히 낮춘다. 버퍼가 오락가락 재할당되지 않도록 한 단계만 둔다.
   const [dpr, setDpr] = useState(MAX_DPR)
   return (
     <Canvas
@@ -63,8 +63,8 @@ export function GameScene(props: Props) {
 }
 
 /**
- * Contact shadows only cover the static board and trays, so they are baked once
- * per layout instead of re-rendered every frame. Pieces get the directional shadow.
+ * Contact shadow 는 정적인 보드와 트레이만 덮으므로 매 프레임 다시 렌더링하지 않고
+ * 레이아웃마다 한 번 굽는다. 말에는 directional shadow 가 적용된다.
  */
 export function Lights({ layoutKey = '' }: { layoutKey?: string }) {
   return (

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const db = vi.hoisted(() => ({
   goOnline: vi.fn(),
   goOffline: vi.fn(),
-  // Leave transactions stay pending until the test resolves them.
+  // 나가기 transaction은 테스트가 resolve할 때까지 pending 상태로 남는다.
   pending: [] as (() => void)[],
 }))
 
@@ -74,7 +74,7 @@ describe('FirebaseBackend connection', () => {
     expect(db.goOffline).not.toHaveBeenCalled()
     unsub()
     await vi.advanceTimersByTimeAsync(2000)
-    // The second seat is still joined.
+    // 두 번째 좌석은 아직 입장한 상태다.
     expect(db.goOffline).not.toHaveBeenCalled()
   })
 

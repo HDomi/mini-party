@@ -1,7 +1,7 @@
 import { useRef, useSyncExternalStore, type PointerEvent } from 'react'
 import { getVolume, setVolume, subscribeVolume } from './sound'
 
-/** Fixed top-right volume bar. Drag or click to set; the speaker toggles mute. */
+/** 오른쪽 위에 고정된 볼륨 바. 드래그하거나 클릭해서 조절하고, 스피커로 음소거를 토글한다. */
 export function VolumeControl() {
   const volume = useSyncExternalStore(subscribeVolume, getVolume)
   const bar = useRef<HTMLDivElement>(null)

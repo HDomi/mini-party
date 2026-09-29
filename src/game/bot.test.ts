@@ -27,7 +27,7 @@ function duel(seed: number, pieces = 4): GameState {
 
 type Player = BotLevel | 'random'
 
-/** Plays a full game and returns the winning player's id. */
+/** 게임 한 판을 끝까지 두고 이긴 플레이어의 id 를 반환한다. */
 function playOut(seed: number, players: Record<string, Player>, pieces = 4): string {
   const rng = seededRng(seed * 7919 + 1)
   let s = duel(seed, pieces)
@@ -50,7 +50,7 @@ function playOut(seed: number, players: Record<string, Player>, pieces = 4): str
 function winRate(level: BotLevel, against: Player, games: number): number {
   let wins = 0
   for (let g = 0; g < games; g++) {
-    // Swap seats every game so turn order doesn't favor either side.
+    // 턴 순서가 어느 한쪽에 유리하지 않도록 게임마다 자리를 바꾼다.
     const botSeat = g % 2 === 0 ? 'a' : 'b'
     const players = botSeat === 'a' ? { a: level, b: against } : { a: against, b: level }
     if (playOut(g + 1, players) === botSeat) wins++
@@ -58,7 +58,7 @@ function winRate(level: BotLevel, against: Player, games: number): number {
   return wins / games
 }
 
-/** A two-player state with the pieces placed by hand, team 0 to move. */
+/** 말을 직접 배치한 2인용 state. team 0 차례. */
 function board(pending: Result[], place: Record<string, { pos: string; trail?: string[] }>): GameState {
   const s = duel(1)
   s.turn = 0
@@ -96,9 +96,9 @@ describe('expectedThrows', () => {
     const o6 = expectedThrows({ pos: 'O6', trail: ['O5', 'O6'] })
     expect(o1).toBeLessThan(home)
     expect(o5).toBeLessThan(o4)
-    // Past the first corner without taking it is the long way round.
+    // 첫 모서리에서 지름길을 타지 않고 지나치면 먼 길로 돌게 된다.
     expect(o6).toBeGreaterThan(o5)
-    // One step from done; only 빽도 can push it back.
+    // 완주까지 한 걸음. 빽도만 뒤로 밀어낼 수 있다.
     const o0 = expectedThrows({ pos: 'O0', trail: ['E2', 'O0'] })
     expect(o0).toBeGreaterThan(1)
     expect(o0).toBeLessThan(expectedThrows({ pos: 'E2', trail: ['E1', 'E2'] }))
@@ -109,7 +109,7 @@ describe('chooseMove', () => {
   const pick = (s: GameState, level: BotLevel = 'hard') => chooseMove(s, level, seededRng(1))
 
   it('captures when it can', () => {
-    // 개 takes 0-0 from O2 onto 1-0 at O4. The alternative is a new piece stacking on O2.
+    // 개로 0-0 이 O2 에서 O4 의 1-0 위로 간다. 대안은 새 말을 O2 에 업는 것이다.
     const s = board(['gae'], { '0-0': { pos: 'O2' }, '1-0': { pos: 'O4' } })
     expect(pick(s)).toEqual({ pendingIndex: 0, pieceId: '0-0' })
   })
@@ -120,13 +120,13 @@ describe('chooseMove', () => {
   })
 
   it('does not walk into a capture', () => {
-    // 1-0 on O12 hits O14 with 개 (6/16). 걸 would carry 0-0 from O11 right there; entering a new piece is safe.
+    // O12 의 1-0 은 개로 O14 를 잡는다 (6/16). 걸은 0-0 을 O11 에서 바로 그 칸으로 옮긴다. 새 말을 올리면 안전하다.
     const s = board(['geol'], { '0-0': { pos: 'O11' }, '1-0': { pos: 'O12', trail: ['O11', 'O12'] } })
     expect(pick(s)?.pieceId).not.toBe('0-0')
   })
 
   it('orders several results to take the corner', () => {
-    // 도 first would leave 0-0 on O2 and 윷 would carry it past O5. 윷 first stops on the corner.
+    // 도를 먼저 쓰면 0-0 이 O2 에 남고 윷이 O5 를 지나쳐 버린다. 윷을 먼저 쓰면 모서리에 멈춘다.
     let s = board(['do', 'yut'], { '0-0': { pos: 'O1' }, '1-0': { pos: 'O10', trail: ['O9', 'O10'] } })
     for (let i = 0; i < 2 && s.phase === 'move'; i++) s = applyAction(s, { type: 'move', by: currentPlayer(s), ...pick(s)! })
     const front = s.pieces.filter((p) => p.team === 0).map((p) => p.pos)

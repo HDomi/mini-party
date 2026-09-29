@@ -28,7 +28,7 @@ export interface Piece {
   id: string
   team: number
   pos: PiecePos
-  /** Stations visited on the board, last = current. Used for 빽도. */
+  /** 판에서 거쳐 온 칸들, 마지막 = 현재 칸. 빽도에 쓴다. */
   trail: NodeId[]
 }
 
@@ -36,7 +36,7 @@ export interface Team {
   name: string
   color: string
   members: string[]
-  /** Advances every time this team finishes a turn, picks which member plays. */
+  /** 이 팀이 턴을 마칠 때마다 증가하며, 어느 팀원이 둘지 정한다. */
   cursor: number
 }
 
@@ -139,7 +139,7 @@ export function currentPlayer(s: GameState): string {
   return team.members[team.cursor % team.members.length]
 }
 
-/** Four sticks; true = flat side (배) up. Stick 0 carries the 빽도 mark. */
+/** 윷가락 네 개. true = 평평한 면(배)이 위. 0번 가락에 빽도 표시가 있다. */
 export function throwSticks(rng: () => number): { sticks: boolean[]; result: Result } {
   const sticks = [0, 1, 2, 3].map(() => rng() < 0.5)
   const flat = sticks.filter(Boolean).length
@@ -150,7 +150,7 @@ export function throwSticks(rng: () => number): { sticks: boolean[]; result: Res
 
 export interface Destination {
   to: PiecePos
-  /** Stations passed through, ending at `to`. */
+  /** 지나가는 칸들. `to` 로 끝난다. */
   path: PiecePos[]
   trail: NodeId[]
 }
@@ -202,13 +202,13 @@ function capTrail(t: NodeId[]): NodeId[] {
   return t.length > 32 ? t.slice(-32) : t
 }
 
-/** Pieces that move together with `piece` (업기). Home pieces move alone. */
+/** `piece` 와 함께 움직이는 말들 (업기). 집에 있는 말은 혼자 움직인다. */
 export function groupOf(s: GameState, piece: Piece): Piece[] {
   if (piece.pos === HOME || piece.pos === GOAL) return [piece]
   return s.pieces.filter((p) => p.team === piece.team && p.pos === piece.pos)
 }
 
-/** One representative per movable group of the current team. */
+/** 현재 팀의 움직일 수 있는 그룹마다 대표 말 하나. */
 export function movableGroups(s: GameState, team: number): Piece[] {
   const seen = new Set<string>()
   const out: Piece[] = []
@@ -249,7 +249,7 @@ function endTurn(s: GameState) {
   s.throwsLeft = 1
 }
 
-/** After a throw or move, decide what the current team does next. */
+/** 던지기나 이동 후, 현재 팀이 다음에 할 일을 정한다. */
 function settle(s: GameState, by: string) {
   if (s.throwsLeft > 0) {
     s.phase = 'throw'
@@ -268,8 +268,8 @@ function settle(s: GameState, by: string) {
 }
 
 /**
- * Pure reducer. Returns a new state or throws RuleError.
- * `proxy` lets someone act for a disconnected current player.
+ * 순수 reducer. 새 state 를 반환하거나 RuleError 를 던진다.
+ * `proxy` 는 연결이 끊긴 현재 플레이어 대신 다른 사람이 행동할 수 있게 한다.
  */
 export function applyAction(
   prev: GameState,

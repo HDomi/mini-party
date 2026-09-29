@@ -1,10 +1,10 @@
-// Deletes rooms nobody has been in for a while. Runs hourly from .github/workflows/sweep-rooms.yml.
-// Uses the RTDB REST API with a service-account token: no npm deps, and it bypasses the database rules.
+// 한동안 아무도 없던 방을 삭제한다. .github/workflows/sweep-rooms.yml에서 매시간 실행된다.
+// service-account 토큰으로 RTDB REST API를 쓴다. npm 의존성이 없고, 데이터베이스 규칙을 우회한다.
 //
-//   FIREBASE_SERVICE_ACCOUNT_JSON  service account key (the whole JSON)
+//   FIREBASE_SERVICE_ACCOUNT_JSON  service account 키 (JSON 전체)
 //   FIREBASE_DATABASE_URL          https://<instance>.firebaseio.com
-//   DB_KEY                         secret path segment, same value as the client's VITE_DB_KEY
-//   DRY_RUN=true                   list what would be deleted, delete nothing
+//   DB_KEY                         비밀 경로 세그먼트, 클라이언트의 VITE_DB_KEY와 같은 값
+//   DRY_RUN=true                   삭제 대상만 출력하고 실제로는 아무것도 삭제하지 않음
 import { createSign } from 'node:crypto'
 import { roomsRoot } from '../src/net/paths.ts'
 import { isRoomIdle, ROOM_IDLE_MS } from '../src/net/sweep.ts'
@@ -55,8 +55,8 @@ async function main() {
   const auth = { Authorization: `Bearer ${await accessToken(sa)}` }
   const now = Date.now()
 
-  // Rooms without `lastSeen` sort first, so this also picks up old rooms and stubs.
-  // Needs `.indexOn: ["lastSeen"]` on /yutnori/$key/rooms, or the server answers 400.
+  // `lastSeen`이 없는 방이 먼저 정렬되므로 오래된 방과 stub도 함께 걸린다.
+  // /yutnori/$key/rooms에 `.indexOn: ["lastSeen"]`이 있어야 하며, 없으면 서버가 400으로 응답한다.
   const query = new URLSearchParams({
     orderBy: JSON.stringify('lastSeen'),
     endAt: String(now - ROOM_IDLE_MS),
@@ -75,7 +75,7 @@ async function main() {
       console.log(`would delete ${code}`)
       continue
     }
-    // Re-read with an ETag and delete only if nothing changed, so a player joining right now keeps the room.
+    // ETag와 함께 다시 읽고 바뀐 게 없을 때만 삭제한다. 지금 막 들어온 플레이어가 있으면 방이 유지된다.
     const url = `${base}/${ROOT}/${code}.json`
     const cur = await fetch(url, { headers: { ...auth, 'X-Firebase-ETag': 'true' } })
     const etag = cur.headers.get('etag')

@@ -3,10 +3,9 @@ import { readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node
 import { join, resolve } from 'node:path'
 import type { Plugin, ResolvedConfig } from 'vite'
 
-// Encrypts the built JS bundle with a password (PBKDF2 -> AES-GCM).
-// The deployed page only holds ciphertext plus a tiny loader that asks for the
-// password and decrypts in the browser. Neither the password nor a hash of it
-// ends up in dist/.
+// 빌드된 JS 번들을 비밀번호로 암호화한다(PBKDF2 -> AES-GCM).
+// 배포된 페이지에는 암호문과, 비밀번호를 물어 브라우저에서 복호화하는
+// 작은 로더만 들어 있다. 비밀번호도, 그 해시도 dist/에 남지 않는다.
 
 const ITERATIONS = 600_000
 
@@ -76,9 +75,9 @@ function listFiles(dir: string): string[] {
   })
 }
 
-// Asks for the password with an in-page form instead of prompt(): in-app browsers
-// (KakaoTalk, Instagram, ...) and dialog-suppressed tabs make prompt() return null
-// without showing anything, which used to look like an instant "wrong password".
+// prompt() 대신 페이지 내 폼으로 비밀번호를 묻는다. 인앱 브라우저(KakaoTalk, Instagram 등)나
+// 대화상자가 차단된 탭에서는 prompt()가 아무것도 띄우지 않고 null을 반환하는데,
+// 예전에는 이게 곧바로 "비밀번호 틀림"처럼 보였다.
 function loader(binUrl: string): string {
   return `(async()=>{
 const K='yutnori:pw';
@@ -106,7 +105,7 @@ return true;
 };
 try{
 let saved=null;try{saved=sessionStorage.getItem(K)}catch(e){}
-// A stale saved password (e.g. after PLAY_PW changed) falls through to the form.
+// 저장된 비밀번호가 오래됐으면(예: PLAY_PW 변경 후) 입력 폼으로 넘어간다.
 if(saved){if(await run(saved))return;try{sessionStorage.removeItem(K)}catch(e){}}
 await ready;
 const gate=document.createElement('main');

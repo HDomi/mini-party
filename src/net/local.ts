@@ -1,7 +1,7 @@
 import { ROOM_TTL_MS, type Backend, type PlayerInfo, type RoomData, type RoomSettings } from './types'
 
-// Dev backend: rooms live in localStorage and tabs sync through BroadcastChannel.
-// Open several tabs of the same browser to play against yourself.
+// 개발용 backend: 방은 localStorage에 저장하고 탭끼리는 BroadcastChannel로 동기화한다.
+// 같은 브라우저에서 탭을 여러 개 열면 혼자서 대전할 수 있다.
 
 const key = (code: string) => `yutnori:room:${code}`
 
@@ -11,7 +11,7 @@ export class LocalBackend implements Backend {
   private listeners = new Map<string, Set<(room: RoomData | null) => void>>()
 
   constructor() {
-    // localStorage syncs across tabs lazily, so the message carries the room itself.
+    // localStorage의 탭 간 동기화는 늦게 일어나므로 메시지에 방 데이터 자체를 싣는다.
     this.channel.onmessage = (e: MessageEvent<{ code: string; raw: string | null }>) => {
       const { code, raw } = e.data
       if (raw === null) localStorage.removeItem(key(code))

@@ -10,7 +10,7 @@ export function useRoom(code: string, name: string) {
 
   useEffect(() => {
     setConnError(null)
-    // RTDB keeps retrying silently when it can't connect (e.g. the connection quota is full), so time out ourselves.
+    // RTDB는 연결하지 못하면(예: 연결 한도 초과) 조용히 재시도만 계속하므로 직접 타임아웃을 건다.
     const timer = window.setTimeout(() => setConnError('서버 응답이 없어요. 잠시 후 다시 시도해 주세요'), 10_000)
     const unsub = backend.subscribe(
       code,
@@ -39,13 +39,13 @@ export function useRoom(code: string, name: string) {
   const me = room?.players?.[playerId]
   const inGame = !!game && playerId in game.names
 
-  // Layout effects run before passive cleanups, so the join cleanup below sees the incoming name.
+  // layout effect는 passive cleanup보다 먼저 실행되므로, 아래 join cleanup이 새로 들어온 이름을 본다.
   const latestName = useRef(name)
   useLayoutEffect(() => {
     latestName.current = name
   }, [name])
 
-  // Seat the player while the room is in the lobby; reconnect them whenever they already have a seat.
+  // 방이 로비 상태일 때 플레이어를 앉힌다. 이미 좌석이 있으면 언제든 다시 연결한다.
   const canSeat = !!room && (!!me || (!game && players.length < 6))
   useEffect(() => {
     if (!canSeat || !name) return
@@ -56,9 +56,9 @@ export function useRoom(code: string, name: string) {
       console.error('join failed', err)
       setConnError('방에 들어가지 못했어요')
     })
-    // A rename re-runs this effect without leaving; unmounting or switching rooms is a real leave.
+    // 이름 변경은 나가지 않고 이 effect를 다시 실행한다. 언마운트나 방 전환이 실제로 나가는 경우다.
     return () => stop(latestName.current === name)
-    // Only re-run when the seat itself changes, not on every room update.
+    // 방이 업데이트될 때마다가 아니라 좌석 자체가 바뀔 때만 다시 실행한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, canSeat, name])
 
@@ -73,7 +73,7 @@ export function useRoom(code: string, name: string) {
     window.setTimeout(() => setError((cur) => (cur === msg ? null : cur)), 2200)
   }, [])
 
-  // Writes reject when the server refuses them; surface that instead of an unhandled rejection.
+  // 서버가 쓰기를 거부하면 reject된다. unhandled rejection으로 두지 않고 화면에 알린다.
   const guard = useCallback(
     async <T,>(p: Promise<T>): Promise<T | undefined> => {
       try {

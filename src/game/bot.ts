@@ -13,12 +13,12 @@ import {
   type Result,
 } from './rules'
 
-// Single-player opponent. It never needs hand-written cases: every legal way to spend the
-// pending throws is played out through the real reducer and the resulting boards are scored.
+// 혼자하기용 상대. 경우를 손으로 짤 필요가 없다: 남은 던지기 결과를 쓰는 모든 합법적인 방법을
+// 실제 reducer 로 진행해 보고, 그 결과로 나온 판을 채점한다.
 
 export type BotLevel = 'easy' | 'normal' | 'hard'
 
-/** Odds of each throw with four fair sticks (see throwSticks). */
+/** 공정한 윷가락 네 개로 던질 때 각 결과의 확률 (throwSticks 참고). */
 export const THROW_ODDS: Record<Result, number> = {
   backdo: 1 / 16,
   do: 3 / 16,
@@ -31,11 +31,11 @@ const RESULTS = Object.keys(THROW_ODDS) as Result[]
 const AVG_STEPS = RESULTS.reduce((sum, r) => sum + THROW_ODDS[r] * RESULT_STEPS[r], 0)
 
 interface Tuning {
-  /** Share of turns where the bot just plays any legal move. */
+  /** 봇이 아무 합법적인 수나 그냥 두는 턴의 비율. */
   random: number
-  /** How much it fears its pieces being caught next turn. */
+  /** 다음 턴에 자기 말이 잡히는 것을 얼마나 경계하는지. */
   danger: number
-  /** How much it values lining up a capture for its next turn. */
+  /** 다음 턴에 잡을 수 있는 자리를 만들어 두는 것을 얼마나 중시하는지. */
   threat: number
 }
 
@@ -45,23 +45,23 @@ const LEVELS: Record<BotLevel, Tuning> = {
   hard: { random: 0, danger: 1, threat: 0.3 },
 }
 
-/** Worth of an extra throw, in throws. */
+/** 추가 던지기 한 번의 가치 (던지기 횟수 단위). */
 const EXTRA_THROW = 1
 const WIN = 1e6
-/** Caps the search on long yut/mo chains; past it, boards are scored as they stand. */
+/** 긴 윷/모 연쇄에서 탐색 깊이를 제한한다. 이를 넘으면 판을 현재 상태 그대로 채점한다. */
 const SEARCH_BUDGET = 4000
 
-// ---------- piece progress ----------
+// ---------- 말 진행도 ----------
 
-/** A piece's future depends on where it is and where it came from (the center fork and 빽도). */
+/** 말의 앞날은 현재 위치와 직전 위치(중앙 갈림길과 빽도)에 따라 달라진다. */
 function keyOf(p: Pick<Piece, 'pos' | 'trail'>): string {
   if (p.pos === HOME || p.pos === GOAL) return p.pos
   return `${p.trail[p.trail.length - 2] ?? ''}>${p.pos}`
 }
 
 /**
- * Expected number of throws a lone piece still needs to finish, per position.
- * Solved once by value iteration over every state a piece can reach from home.
+ * 위치별로, 혼자 있는 말이 완주하기까지 더 필요한 던지기 횟수의 기댓값.
+ * 집에서 도달할 수 있는 모든 상태에 대해 value iteration 으로 한 번만 계산한다.
  */
 const EXPECTED_THROWS: Map<string, number> = (() => {
   const next = new Map<string, (string | null)[]>()
@@ -98,7 +98,7 @@ const EXPECTED_THROWS: Map<string, number> = (() => {
   return v
 })()
 
-/** Fallback for trails the table never saw: the best known value at that station. */
+/** 표에 없는 trail 에 대한 대체값: 해당 칸에서 알려진 가장 좋은 값. */
 const BY_POS: Map<string, number> = (() => {
   const m = new Map<string, number>()
   for (const [k, e] of EXPECTED_THROWS) {
@@ -114,14 +114,14 @@ export function expectedThrows(p: Pick<Piece, 'pos' | 'trail'>): number {
   return EXPECTED_THROWS.get(keyOf(p)) ?? BY_POS.get(p.pos as string) ?? FROM_HOME
 }
 
-/** Throws already saved by this piece compared to one still at home. */
+/** 아직 집에 있는 말과 비교해 이 말이 이미 줄여 둔 던지기 횟수. */
 function progress(p: Piece): number {
   return FROM_HOME - expectedThrows(p)
 }
 
-// ---------- board evaluation ----------
+// ---------- 판 평가 ----------
 
-/** Chance that one of `hunter`'s groups lands on `pos` with its next throw. */
+/** `hunter` 의 그룹 중 하나가 다음 던지기로 `pos` 에 도착할 확률. */
 function hitChance(s: GameState, hunter: number, pos: string): number {
   let odds = 0
   for (const r of RESULTS) {
@@ -130,7 +130,7 @@ function hitChance(s: GameState, hunter: number, pos: string): number {
   return odds
 }
 
-/** Board groups of a team, as [station, pieces there]. */
+/** 한 팀의 판 위 그룹들. [칸, 그 칸의 말들] 형태. */
 function groupsOnBoard(s: GameState, team: number): [string, Piece[]][] {
   const m = new Map<string, Piece[]>()
   for (const p of s.pieces) {
@@ -140,12 +140,12 @@ function groupsOnBoard(s: GameState, team: number): [string, Piece[]][] {
   return [...m]
 }
 
-/** Expected throws lost if the group is caught: its progress plus the capturer's bonus throw. */
+/** 그룹이 잡혔을 때 잃는 던지기 횟수의 기댓값: 그 그룹의 진행도에 잡은 쪽의 보너스 던지기를 더한 값. */
 function exposure(group: Piece[]): number {
   return group.reduce((sum, p) => sum + progress(p), 0) + EXTRA_THROW
 }
 
-/** Board score from `team`'s side, in throws. Higher is better. */
+/** `team` 입장에서 본 판 점수 (던지기 횟수 단위). 높을수록 좋다. */
 export function evaluate(s: GameState, team: number, level: BotLevel = 'hard'): number {
   if (s.winner !== null) return s.winner === team ? WIN : -WIN
   const t = LEVELS[level]
@@ -154,7 +154,7 @@ export function evaluate(s: GameState, team: number, level: BotLevel = 'hard'): 
   const raw = (side: number) => s.pieces.filter((p) => p.team === side).reduce((sum, p) => sum + progress(p), 0)
   let mine = raw(team)
 
-  // Still my turn (a capture's bonus throw): leftover results and throws are mine to use, and I move before anyone can hit me.
+  // 아직 내 턴이다 (잡기 보너스 던지기): 남은 결과와 던지기는 내가 쓰고, 누가 나를 잡기 전에 내가 먼저 움직인다.
   const stillMine = s.turn === team && s.phase !== 'over'
   if (stillMine) {
     mine += s.throwsLeft * EXTRA_THROW
@@ -180,14 +180,14 @@ export function evaluate(s: GameState, team: number, level: BotLevel = 'hard'): 
   return mine - best
 }
 
-// ---------- move search ----------
+// ---------- 수 탐색 ----------
 
 export interface Move {
   pendingIndex: number
   pieceId: string
 }
 
-/** Every distinct way to spend one pending result. Equal results share a move, so only the first index is kept. */
+/** 남은 결과 하나를 쓰는 서로 다른 모든 방법. 같은 결과는 같은 수가 되므로 첫 인덱스만 남긴다. */
 function options(s: GameState): Move[] {
   const out: Move[] = []
   const seen = new Set<Result>()
@@ -207,7 +207,7 @@ function stateKey(s: GameState): string {
   return `${s.turn}|${s.phase}|${s.throwsLeft}|${[...s.pending].sort().join(',')}|${s.pieces.map(keyOf).join(',')}`
 }
 
-/** Best score reachable by spending the rest of this turn's results, before the next throw. */
+/** 다음 던지기 전에 이번 턴의 남은 결과를 모두 써서 얻을 수 있는 최고 점수. */
 function searchTurn(s: GameState, team: number, level: BotLevel, memo: Map<string, number>, budget: { left: number }): number {
   if (s.phase !== 'move' || s.turn !== team || budget.left <= 0) return evaluate(s, team, level)
   const key = stateKey(s)
@@ -223,7 +223,7 @@ function searchTurn(s: GameState, team: number, level: BotLevel, memo: Map<strin
   return best
 }
 
-/** The move the bot makes now, or null when there is nothing to move. */
+/** 봇이 지금 둘 수. 움직일 것이 없으면 null. */
 export function chooseMove(s: GameState, level: BotLevel, rng: () => number = Math.random): Move | null {
   if (s.phase !== 'move') return null
   const moves = options(s)
@@ -245,7 +245,7 @@ export function chooseMove(s: GameState, level: BotLevel, rng: () => number = Ma
   return best[Math.floor(rng() * best.length)]
 }
 
-/** What `botId` does right now, or null when it isn't its turn. */
+/** `botId` 가 지금 할 행동. 자기 턴이 아니면 null. */
 export function botAction(s: GameState, botId: string, level: BotLevel, rng: () => number = Math.random): Action | null {
   if (s.phase === 'over' || currentPlayer(s) !== botId) return null
   if (s.phase === 'throw') return { type: 'throw', by: botId }

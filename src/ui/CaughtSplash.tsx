@@ -9,7 +9,7 @@ export interface Caught {
   byColor: string
 }
 
-/** Full-screen "잡혔다" splash, shown only to the players whose piece just got sent home. */
+/** 전체 화면 "잡혔다" 스플래시. 방금 말이 집으로 돌아간 플레이어에게만 보여준다. */
 export function CaughtSplash({ caught }: { caught: Caught }) {
   const taunt = TAUNTS[caught.seq % TAUNTS.length]
   return (
@@ -38,7 +38,7 @@ function CryingPiece() {
         strokeLinejoin="round"
       />
       <path d="M42 56 C50 44 62 40 70 42" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" opacity="0.45" />
-      {/* ㅠ eyes */}
+      {/* ㅠ 눈 */}
       <g stroke="var(--ink)" strokeWidth="5" strokeLinecap="round">
         <path d="M44 66 H70 M50 66 V78 M64 66 V78" />
         <path d="M90 66 H116 M96 66 V78 M110 66 V78" />

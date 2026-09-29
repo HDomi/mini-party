@@ -36,7 +36,7 @@ function usePortrait() {
 
 const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
-/** One way to move the picked piece: which pending result to spend and where it lands. */
+/** 고른 말을 옮기는 한 가지 방법: 어떤 대기 결과를 쓰고 어디에 착지하는지. */
 interface Option {
   idx: number
   result: Result
@@ -44,7 +44,7 @@ interface Option {
   dest: Destination
 }
 
-/** What the board needs from whoever runs the game: a shared room (useRoom) or a local game against the bot (useSoloGame). */
+/** 게임을 돌리는 쪽(공유 방 useRoom 또는 봇과의 로컬 게임 useSoloGame)에게 보드가 필요로 하는 것. */
 export interface GameApi {
   room: { players?: Record<string, { online: boolean }> } | null | undefined
   inGame: boolean
@@ -55,7 +55,7 @@ export interface GameApi {
   toLobby: () => Promise<unknown>
 }
 
-/** How long everyone else must stay offline before the last player wins. Covers reloads. */
+/** 마지막 플레이어가 이기기 전까지 나머지 모두가 오프라인으로 있어야 하는 시간. 새로고침도 감안한다. */
 const LAST_STANDING_GRACE_MS = 15_000
 
 export function GameView({
@@ -86,7 +86,7 @@ export function GameView({
     return o
   }, [api.room?.players, game.names])
 
-  // Everyone but me left a running game: after a grace period I win and the room goes away.
+  // 진행 중인 게임에서 나만 남았다: 유예 시간이 지나면 내가 이기고 방은 사라진다.
   const alone =
     api.inGame &&
     game.phase !== 'over' &&
@@ -96,7 +96,7 @@ export function GameView({
     if (!alone || !myTeam) return
     const t = window.setTimeout(() => onLastStanding(myTeam), LAST_STANDING_GRACE_MS)
     return () => window.clearTimeout(t)
-    // myTeam/onLastStanding are stable for the life of this game
+    // myTeam/onLastStanding 은 이 게임이 끝날 때까지 바뀌지 않는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alone])
 
@@ -107,12 +107,12 @@ export function GameView({
   const event = game.event
   const throwing = event.type === 'throw' && event.seq > revealed
 
-  // Reveal the throw once the sticks land.
+  // 윷가락이 떨어지면 던지기 결과를 공개한다.
   useEffect(() => {
     if (event.type !== 'throw' || event.seq <= revealed) return
     const t = window.setTimeout(() => {
       setRevealed(event.seq)
-      // The next throw's result matters more than the splash from the last capture.
+      // 직전 잡기의 스플래시보다 다음 던지기 결과가 더 중요하다.
       setCaught(null)
       const skipped = currentPlayer(game) !== event.by
       const thrower = game.teams.find((tm) => tm.members.includes(event.by))
@@ -134,7 +134,7 @@ export function GameView({
     return () => window.clearTimeout(t)
   }, [banner])
 
-  // Once a capture lands: the victims get the splash, the capturer and everyone else a banner.
+  // 잡기가 착지하면 잡힌 쪽에는 스플래시를, 잡은 쪽과 나머지에게는 배너를 보여준다.
   useEffect(() => {
     if (event.type !== 'move' || !event.captured.length || event.seq <= mountSeq) return
     const actor = game.teams.find((t) => t.members.includes(event.by))
@@ -159,7 +159,7 @@ export function GameView({
       (event.path.length * HOP + 0.05) * 1000,
     )
     return () => window.clearTimeout(t)
-    // Keyed on the event; names and teams are read at that moment.
+    // 이벤트를 키로 삼는다. 이름과 팀은 그 시점의 값을 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.seq])
 
@@ -169,7 +169,7 @@ export function GameView({
     return () => window.clearTimeout(t)
   }, [caught])
 
-  // Celebrate once the winning piece has landed (matches the overlay's delay).
+  // 승리를 결정한 말이 착지한 뒤에 축하한다 (오버레이 지연과 맞춘다).
   const winnerColor = game.winner !== null ? game.teams[game.winner].color : null
   useEffect(() => {
     if (!winnerColor) return
@@ -184,17 +184,17 @@ export function GameView({
     }
   }, [winnerColor])
 
-  // Chime when the turn passes to me, once the move or throw that passed it has played out.
+  // 차례가 나에게 넘어오면, 그 차례를 넘긴 이동이나 던지기가 다 재생된 뒤에 알림음을 울린다.
   useEffect(() => {
     if (cur !== playerId || game.phase === 'over' || game.seq <= mountSeq) return
     const wait = event.type === 'move' ? event.path.length * HOP * 1000 + 250 : THROW_REVEAL_MS + 200
     const t = window.setTimeout(() => play('turn'), wait)
     return () => window.clearTimeout(t)
-    // Only the hand-over matters; the rest is read at that moment.
+    // 차례가 넘어오는 것만 중요하다. 나머지는 그 시점의 값을 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cur])
 
-  // Any new state invalidates the local selection.
+  // 새 상태가 오면 로컬 선택은 무효가 된다.
   useEffect(() => {
     setSelPiece(null)
     setHover(null)
@@ -203,7 +203,7 @@ export function GameView({
   const pending = throwing ? game.pending.slice(0, -1) : game.pending
   const movePhase = canAct && game.phase === 'move' && !throwing
 
-  // Every distinct pending result that can move something; duplicates share a destination.
+  // 무언가를 옮길 수 있는 서로 다른 대기 결과 전부. 중복된 결과는 도착지를 공유한다.
   const choices = useMemo(() => {
     if (!movePhase) return []
     const seen = new Set<Result>()
@@ -266,7 +266,7 @@ export function GameView({
     return null
   }
 
-  // One marker per landing spot. Several results can reach the goal; the marker spends the smallest.
+  // 착지 지점마다 마커 하나. 여러 결과로 골인할 수 있으면 마커는 가장 작은 결과를 쓴다.
   const previews: Preview[] = (() => {
     const byDest = new Map<string, Option[]>()
     for (const o of [...focusOptions].sort((a, b) => RESULT_STEPS[a.result] - RESULT_STEPS[b.result]))
@@ -296,7 +296,7 @@ export function GameView({
     const opts = optionsFor(id)
     if (!opts.length) return
     const same = samePlace(selPiece, id)
-    // A piece sitting on a shown destination (업기 target) means "go there", not "pick this one".
+    // 표시된 도착지(업기 대상)에 있는 말은 "이 말을 고른다"가 아니라 "거기로 간다"는 뜻이다.
     if (selPiece && !same) {
       const pos = game.pieces.find((p) => p.id === id)?.pos
       const target = selOptions.find((o) => o.dest.to === pos)
@@ -311,7 +311,7 @@ export function GameView({
   }
 
   if (import.meta.env.DEV) {
-    // test hook for driving the board from automation; stripped from production builds
+    // 자동화로 보드를 조작하기 위한 테스트 훅. 프로덕션 빌드에서는 제거된다
     ;(window as unknown as Record<string, unknown>).__yut = {
       game,
       legal: choices[0]?.moves ?? [],

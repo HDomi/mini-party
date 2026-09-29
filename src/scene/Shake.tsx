@@ -2,8 +2,8 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, type ReactNode } from 'react'
 import type * as THREE from 'three'
 
-// Trauma-style screen shake: impacts add trauma, it decays, offset ~ trauma².
-// The world group moves instead of the camera so OrbitControls stays untouched.
+// Trauma 방식 화면 흔들림: 충격이 trauma 를 더하고, trauma 는 감쇠하며, 오프셋 ~ trauma².
+// 카메라 대신 월드 그룹을 움직여서 OrbitControls 는 건드리지 않는다.
 let trauma = 0
 
 export function addShake(amount: number) {

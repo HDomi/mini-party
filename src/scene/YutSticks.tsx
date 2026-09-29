@@ -14,7 +14,7 @@ const FLIGHT = 1.05
 const HOLD_UNTIL = 2.9
 const GONE_AT = 3.25
 
-/** Seconds from the throw event until the sticks settle; the HUD reveals the result then. */
+/** 던지기 이벤트부터 윷가락이 멈출 때까지의 초. 그때 HUD 가 결과를 공개한다. */
 export const THROW_REVEAL_MS = 1350
 
 const roundGeometry = (() => {
@@ -99,7 +99,7 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
       let wobble = 0
       if (k >= 1) {
         const b = t - FLIGHT
-        // first touchdown hits hard, the bounce lands softly
+        // 첫 착지는 세게 부딪히고, 튕긴 뒤의 착지는 부드럽다
         if (c.hits[i] === 0) {
           c.hits[i] = 1
           impacts.current?.hit(p.land.x, p.land.z, 1)
@@ -111,7 +111,7 @@ export function YutSticks({ event, mountSeq }: { event: GameEvent; mountSeq: num
           addShake(0.06)
           play('land', 0.35)
         }
-        // two small settling bounces
+        // 자리를 잡는 작은 튕김 두 번
         const hop = b < 0.22 ? Math.sin((b / 0.22) * Math.PI) * 0.35 : b < 0.36 ? Math.sin(((b - 0.22) / 0.14) * Math.PI) * 0.1 : 0
         g.position.y = restY + hop
         wobble = Math.exp(-b * 9) * Math.sin(b * 38) * 0.25

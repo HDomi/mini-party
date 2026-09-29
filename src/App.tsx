@@ -10,7 +10,7 @@ function codeFromHash(): string | null {
   return m ? m[1].toUpperCase() : null
 }
 
-/** Single-player route. Not a room code (codes are exactly four characters), so it can't collide with one. */
+/** 1인 플레이 경로. 방 코드가 아니므로(코드는 정확히 네 글자) 방 코드와 겹칠 일이 없다. */
 const SOLO_HASH = '#/bot'
 const soloFromHash = () => location.hash === SOLO_HASH
 

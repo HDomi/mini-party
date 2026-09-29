@@ -15,7 +15,7 @@ interface Plan {
   seq: number
   delay: number
   hops: Hop[]
-  /** Set on one piece per move so a stack doesn't play every sound several times. */
+  /** 이동마다 말 하나에만 설정해서 업힌 말들이 소리를 여러 번 내지 않게 한다. */
   sound?: { last: SoundName }
 }
 
@@ -37,7 +37,7 @@ const bodyGeometry = (() => {
 })()
 const eyeGeometry = new THREE.SphereGeometry(0.045, 12, 8)
 const eyeMaterial = new THREE.MeshStandardMaterial({ color: '#1d1512', roughness: 0.3 })
-// Invisible, wider than the body: pieces are small on phones and taps kept missing.
+// 보이지 않고 몸체보다 넓다: 폰에서는 말이 작아서 탭이 자꾸 빗나갔다.
 const hitGeometry = new THREE.CylinderGeometry(0.78, 0.78, 0.9, 16)
 const haloMaterial = new THREE.MeshStandardMaterial({
   color: '#ffd35a',
@@ -85,7 +85,7 @@ export function Pieces({ game, portrait, mountSeq, movableIds, selectedId, onPic
       out[id] = { seq: e.seq, delay: landAt, hops: [{ to: rest[id], dur: 0.75, arc: 3.4 }] }
     }
     return out
-    // plans only depend on the event; `rest` is read for its value at that moment
+    // plans 는 이벤트에만 의존한다. `rest` 는 그 시점의 값을 읽는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.event.seq, portrait, mountSeq])
 

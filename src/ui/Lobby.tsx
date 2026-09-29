@@ -139,7 +139,7 @@ export function Lobby({
   )
 }
 
-/** Inline rename for my own row. Only rendered in the lobby, so names are fixed once a game starts. */
+/** 내 행의 인라인 이름 변경. 로비에서만 렌더링되므로 게임이 시작되면 이름은 고정된다. */
 function NameEditor({ name, onSave }: { name: string; onSave: (name: string) => void }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)

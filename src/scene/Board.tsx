@@ -13,7 +13,7 @@ export function Board() {
 
   useEffect(() => {
     let alive = true
-    // The start label uses Jua; wait so the canvas doesn't fall back to a system font.
+    // 출발 라벨은 Jua 폰트를 쓴다. 캔버스가 시스템 폰트로 대체되지 않도록 기다린다.
     document.fonts
       .load('64px Jua')
       .catch(() => undefined)

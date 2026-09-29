@@ -24,7 +24,7 @@ function game(players = 2, teamMode = false): GameState {
   })
 }
 
-/** rng that yields a fixed throw result, then anything. */
+/** 처음엔 정해진 던지기 결과를 내고, 그 뒤로는 아무 값이나 내는 rng. */
 function rigged(result: Result): () => number {
   const faces: Record<Result, boolean[]> = {
     backdo: [true, false, false, false],
@@ -132,7 +132,7 @@ describe('applyAction', () => {
     expect(s.pieces.filter((p) => p.pos === 'O2')).toHaveLength(2)
     const me2 = currentPlayer(s)
     s = applyAction(s, { type: 'throw', by: me2 }, { rng: rigged('backdo') })
-    // the other team has nothing on board, so backdo skipped back to us
+    // 상대 팀은 판에 말이 없어서 빽도가 건너뛰어져 다시 우리 차례가 됐다
     s = applyAction(s, { type: 'throw', by: currentPlayer(s) }, { rng: rigged('geol') })
     s = applyAction(s, { type: 'move', by: currentPlayer(s), pendingIndex: 0, pieceId: a.id })
     expect(s.pieces.filter((p) => p.pos === 'O5').map((p) => p.id).sort()).toEqual([a.id, b.id].sort())
@@ -157,7 +157,7 @@ describe('applyAction', () => {
     expect(s.teams).toHaveLength(2)
     const t0 = s.turn
     const firstMember = currentPlayer(s)
-    // backdo with an empty board skips instantly, cycling turns
+    // 판이 비었을 때 빽도는 즉시 건너뛰어지고, 턴이 돌아간다
     s = applyAction(s, { type: 'throw', by: currentPlayer(s) }, { rng: rigged('backdo') })
     s = applyAction(s, { type: 'throw', by: currentPlayer(s) }, { rng: rigged('backdo') })
     expect(s.turn).toBe(t0)

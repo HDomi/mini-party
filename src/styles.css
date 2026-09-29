@@ -52,7 +52,7 @@ input {
   color: inherit;
 }
 
-/* ---------- common ---------- */
+/* ---------- 공통 ---------- */
 
 .btn {
   border: 2px solid var(--ink);
@@ -126,7 +126,7 @@ input {
   animation: breathe 1.6s ease-in-out infinite;
 }
 
-/* ---------- home ---------- */
+/* ---------- 홈 ---------- */
 
 .home {
   height: 100%;
@@ -258,7 +258,7 @@ input {
   text-transform: uppercase;
 }
 
-/* ---------- solo ---------- */
+/* ---------- 혼자하기 ---------- */
 
 .solo-btn {
   margin-top: 12px;
@@ -271,7 +271,7 @@ input {
   margin: 20px 0 22px;
 }
 
-/* ---------- lobby ---------- */
+/* ---------- 로비 ---------- */
 
 .lobby {
   height: 100%;
@@ -458,7 +458,7 @@ input {
   margin: 8px 4px 14px;
 }
 
-/* ---------- game ---------- */
+/* ---------- 게임 ---------- */
 
 .game {
   height: 100%;
@@ -559,7 +559,7 @@ input {
   justify-items: center;
   gap: 10px;
   width: min(460px, calc(100% - 32px));
-  /* the dock's empty band must not swallow taps on pieces behind it */
+  /* 독의 빈 띠가 뒤에 있는 말의 탭을 가로채면 안 된다 */
   pointer-events: none;
 }
 .dock > * {
@@ -750,7 +750,7 @@ input {
   animation: pop 0.25s ease-out;
 }
 
-/* ---------- 3D labels ---------- */
+/* ---------- 3D 라벨 ---------- */
 
 .tray-label {
   display: grid;
@@ -825,7 +825,7 @@ input {
   animation: bob 0.9s ease-in-out infinite;
 }
 
-/* ---------- caught splash ---------- */
+/* ---------- 잡힘 스플래시 ---------- */
 
 .caught {
   position: absolute;
@@ -936,7 +936,7 @@ input {
   }
 }
 
-/* ---------- responsive ---------- */
+/* ---------- 반응형 ---------- */
 
 @media (max-width: 640px) {
   .title {
@@ -964,7 +964,7 @@ input {
   }
 }
 
-/* ---------- keyframes ---------- */
+/* ---------- 키프레임 ---------- */
 
 @keyframes spin {
   to {
@@ -1087,7 +1087,7 @@ input {
   outline: none;
 }
 
-/* ---------- volume ---------- */
+/* ---------- 볼륨 ---------- */
 
 .volume {
   position: fixed;
@@ -1135,7 +1135,7 @@ input {
   border-radius: 999px;
   background: var(--red);
 }
-/* Keep the HUD and lobby header clear of the fixed volume pill. */
+/* HUD 와 로비 헤더가 고정된 볼륨 필에 가려지지 않게 한다. */
 .hud-top {
   padding-right: 150px;
 }

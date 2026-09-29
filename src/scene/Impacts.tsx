@@ -3,7 +3,7 @@ import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { BOARD_TOP } from './layout'
 
-// Landing impact: an expanding shockwave ring plus a puff of dust per hit.
+// 착지 충격: 부딪힐 때마다 퍼지는 충격파 링과 먼지 한 뭉치.
 
 const RINGS = 6
 const DUST_PER_HIT = 22
@@ -32,8 +32,8 @@ export const Impacts = forwardRef<ImpactsHandle>(function Impacts(_, ref) {
     [],
   )
   const nextDust = useRef(0)
-  // Seconds since the last hit; once every effect has faded the per-frame work stops.
-  // Starts at 0 so the first frames zero out the default identity instance matrices.
+  // 마지막 충격 이후 경과 초. 모든 효과가 사라지면 프레임마다 하는 작업을 멈춘다.
+  // 0 에서 시작해 첫 프레임들에서 기본 단위 인스턴스 행렬을 0 으로 만든다.
   const idle = useRef(0)
   const tmp = useMemo(() => new THREE.Object3D(), [])
 
@@ -57,7 +57,7 @@ export const Impacts = forwardRef<ImpactsHandle>(function Impacts(_, ref) {
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05)
-    // one extra frame past the lifetime so the last instances get zeroed
+    // 마지막 인스턴스들이 0 이 되도록 수명보다 한 프레임 더 돈다
     if (idle.current > Math.max(RING_LIFE, DUST_LIFE) + 0.1) return
     idle.current += dt
     ringState.current.forEach((st, i) => {

@@ -33,7 +33,7 @@ function speckle(ctx: CanvasRenderingContext2D, w: number, h: number, n: number,
   }
 }
 
-/** Hanji-style board top with the yut paths drawn in ink. */
+/** 윷판 길을 먹으로 그린 한지 느낌의 보드 윗면. */
 export function boardTexture(): THREE.CanvasTexture {
   const S = 2048
   const [c, ctx] = canvas(S)
@@ -55,14 +55,14 @@ export function boardTexture(): THREE.CanvasTexture {
   }
 
   const toPx = (v: number) => ((v + BOARD_SIZE / 2) / BOARD_SIZE) * S
-  // double red frame
+  // 이중 빨간 테두리
   ctx.strokeStyle = RED
   ctx.lineWidth = 10
   ctx.strokeRect(46, 46, S - 92, S - 92)
   ctx.lineWidth = 3
   ctx.strokeRect(70, 70, S - 140, S - 140)
 
-  // paths
+  // 길
   ctx.strokeStyle = INK
   ctx.lineCap = 'round'
   ctx.lineWidth = 9
@@ -75,7 +75,7 @@ export function boardTexture(): THREE.CanvasTexture {
     ctx.stroke()
   }
 
-  // stations
+  // 칸
   for (const [id, [x, z]] of Object.entries(NODE_POS)) {
     const px = toPx(x)
     const pz = toPx(z)
@@ -103,7 +103,7 @@ export function boardTexture(): THREE.CanvasTexture {
     }
   }
 
-  // start marker + direction arrow
+  // 출발 표시 + 방향 화살표
   const [sx, sz] = NODE_POS.O0
   ctx.fillStyle = RED
   ctx.font = '600 64px Jua, sans-serif'
@@ -124,7 +124,7 @@ export function boardTexture(): THREE.CanvasTexture {
   return finish(c)
 }
 
-/** Woven straw mat (멍석) under the board. */
+/** 보드 밑에 까는 짚으로 엮은 멍석. */
 export function matTexture(): THREE.CanvasTexture {
   const S = 512
   const [c, ctx] = canvas(S)
@@ -187,7 +187,7 @@ function drawX(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, c
   ctx.stroke()
 }
 
-/** Stick textures. Canvas x runs along the stick length. */
+/** 윷가락 텍스처. 캔버스 x 축은 윷가락 길이 방향이다. */
 export function stickTextures() {
   const W = 512
   const H = 96

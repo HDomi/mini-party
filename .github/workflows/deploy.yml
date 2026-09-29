@@ -17,7 +17,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Environment-level secrets live on `github-pages`; repo-level secrets work too.
+    # 환경 수준 secret은 `github-pages`에 둔다. 저장소 수준 secret도 동작한다.
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -35,7 +35,7 @@ jobs:
 
       - name: Build
         run: |
-          # Without the key the bundle would talk to a path the database rules keep closed.
+          # 키가 없으면 번들이 DB 규칙상 닫힌 경로로 접속하게 된다.
           if [ -n "$VITE_FIREBASE_DATABASE_URL" ] && ! printf '%s' "$VITE_DB_KEY" | grep -Eq '^[A-Za-z0-9_-]{16,128}$'; then
             echo "::error::DB_KEY secret is missing or not 16-128 chars of A-Z a-z 0-9 _ -"
             exit 1
@@ -44,9 +44,9 @@ jobs:
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL || vars.FIREBASE_DATABASE_URL }}
-          # Inlined into the bundle, which the password gate encrypts.
+          # 번들에 인라인되며, 그 번들은 password gate가 암호화한다.
           VITE_DB_KEY: ${{ secrets.DB_KEY }}
-          # Build-time only: encrypts the bundle. Not VITE_-prefixed, so it is never inlined.
+          # 빌드 시점 전용: 번들을 암호화한다. VITE_ 접두사가 없어 인라인되지 않는다.
           PLAY_PW: ${{ secrets.PLAY_PW }}
 
       - uses: actions/configure-pages@v5

@@ -15,7 +15,7 @@ import {
 import { roomsRoot } from './paths'
 import { ROOM_TTL_MS, type Backend, type RoomData } from './types'
 
-/** Grace period before closing the socket, so back-to-back holds (Home -> room, rename re-join) don't bounce it. */
+/** 소켓을 닫기 전 유예 시간. 연달아 오는 hold(Home -> 방, 이름 변경 후 재입장)에 소켓이 끊겼다 붙지 않게 한다. */
 const IDLE_CLOSE_MS = 2000
 
 export class FirebaseBackend implements Backend {
@@ -23,8 +23,8 @@ export class FirebaseBackend implements Backend {
   private db: Database
   private root: string
 
-  // Listeners, seats and in-flight writes each hold the connection. The socket closes once the last
-  // one lets go, so tabs sitting on Home don't count against the concurrent-connection quota.
+  // 리스너, 좌석, 진행 중인 쓰기가 각각 연결을 잡는다. 마지막 하나까지 놓으면 소켓을 닫으므로
+  // Home에 머물러 있는 탭은 동시 연결 한도에 잡히지 않는다.
   private holds = 0
   private idleTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -44,7 +44,7 @@ export class FirebaseBackend implements Backend {
     this.idleTimer = setTimeout(() => goOffline(this.db), IDLE_CLOSE_MS)
   }
 
-  /** Holds the connection until `fn` settles. Writes resolve on server ack, so nothing is cut off. */
+  /** `fn`이 끝날 때까지 연결을 유지한다. 쓰기는 서버 ack 시점에 resolve되므로 중간에 끊기는 것이 없다. */
   private async held<T>(fn: () => Promise<T>): Promise<T> {
     this.hold()
     try {
@@ -89,12 +89,12 @@ export class FirebaseBackend implements Backend {
       async (snap) => {
         if (snap.val() !== true) return
         try {
-          // Stamps `lastSeen` even when the tab dies, so the sweeper can tell when the room emptied.
+          // 탭이 죽어도 `lastSeen`을 기록해 sweeper가 방이 언제 비었는지 알 수 있게 한다.
           await onDisconnect(roomRef).update({
             [`players/${player.id}/online`]: false,
             lastSeen: serverTimestamp(),
           })
-          // `joinedAt` keeps the first value so seat order survives reconnects.
+          // `joinedAt`은 처음 값을 유지해 재연결 후에도 좌석 순서가 그대로 남는다.
           await runTransaction(playerRef, (cur) => ({
             ...player,
             ...(cur ?? {}),
@@ -109,8 +109,8 @@ export class FirebaseBackend implements Backend {
     )
     return (leaving: boolean) => {
       unsub()
-      // A transaction rather than update() so a room that is already gone isn't recreated as a stub.
-      // The onDisconnect stays armed until this lands, covering us if it never does.
+      // 이미 사라진 방이 stub으로 다시 생기지 않도록 update() 대신 transaction을 쓴다.
+      // 이 쓰기가 반영될 때까지 onDisconnect는 걸린 채로 남아, 끝내 반영되지 않는 경우에 대비한다.
       runTransaction(roomRef, (cur: RoomData | null) => {
         if (!cur) return null
         const players = cur.players ?? {}
@@ -123,10 +123,10 @@ export class FirebaseBackend implements Backend {
           lastSeen: Date.now(),
         }
       })
-        // Only when leaving: a re-join (e.g. after a rename) has already armed its own onDisconnect here.
+        // 나갈 때만 취소한다. 재입장(예: 이름 변경 후)은 이미 여기에 자기 onDisconnect를 걸어 두었다.
         .then(() => (leaving ? onDisconnect(roomRef).cancel() : undefined))
         .catch(() => {})
-        // Released only now: going offline earlier would drop the leave write and fire the onDisconnect.
+        // 이 시점에야 release한다. 더 일찍 오프라인이 되면 나가기 쓰기가 유실되고 onDisconnect가 실행된다.
         .finally(() => this.release())
     }
   }
