@@ -34,6 +34,8 @@ const bodyGeometry = (() => {
 })()
 const eyeGeometry = new THREE.SphereGeometry(0.045, 12, 8)
 const eyeMaterial = new THREE.MeshStandardMaterial({ color: '#1d1512', roughness: 0.3 })
+// Invisible, wider than the body: pieces are small on phones and taps kept missing.
+const hitGeometry = new THREE.CylinderGeometry(0.78, 0.78, 0.9, 16)
 const haloMaterial = new THREE.MeshStandardMaterial({
   color: '#ffd35a',
   emissive: '#ffb300',
@@ -246,6 +248,7 @@ function PieceView(props: {
           onHover(null)
         }}
       >
+        {clickable && <mesh geometry={hitGeometry} position={[0, 0.35, 0]} visible={false} />}
         <mesh geometry={bodyGeometry} material={material} castShadow receiveShadow />
         <mesh geometry={eyeGeometry} material={eyeMaterial} position={[-0.12, 0.19, 0.42]} />
         <mesh geometry={eyeGeometry} material={eyeMaterial} position={[0.12, 0.19, 0.42]} />

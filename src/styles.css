@@ -546,6 +546,11 @@ input {
   justify-items: center;
   gap: 10px;
   width: min(460px, calc(100% - 32px));
+  /* the dock's empty band must not swallow taps on pieces behind it */
+  pointer-events: none;
+}
+.dock > * {
+  pointer-events: auto;
 }
 .notice {
   margin: 0;
