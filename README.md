@@ -35,6 +35,19 @@ Repository settings:
 
 The build fails if `PLAY_PW` is empty on CI, and also fails if the password string shows up anywhere in `dist/`.
 
+## Room cleanup
+
+- The last player to leave a room deletes it.
+- Each player's `onDisconnect` stamps `lastSeen`, so rooms emptied by closed tabs or dropped connections still get a timestamp.
+- `.github/workflows/sweep-rooms.yml` runs `scripts/sweep-rooms.ts` hourly and deletes rooms with nobody online for 30 minutes (or untouched for 24 hours). Run it by hand from the Actions tab with `dry_run` to see what it would delete.
+
+The sweep job doesn't use the `github-pages` environment, so it needs **repo-level** secrets:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — service account key JSON (Firebase console → Project settings → Service accounts → Generate new private key)
+- `FIREBASE_DATABASE_URL` — same as above (a repo-level secret or variable)
+
+GitHub pauses scheduled workflows after 60 days without repo activity; re-enable it from the Actions tab if that happens.
+
 ## Password gate
 
 `scripts/vite-plugin-password-gate.ts` encrypts the single JS bundle with AES-GCM (key from PBKDF2-SHA256, 600k iterations). `dist/` only contains the ciphertext and a small loader that asks for the password and decrypts in the browser. A wrong password shows an alert and closes the tab (or blanks it, since browsers only let scripts close windows they opened). The password is remembered in `sessionStorage` for the tab so reloads don't ask again.
@@ -46,11 +59,12 @@ Limits:
 
 ## Database rules
 
-The game only touches `/yutnori/rooms/{CODE}`. Add this block inside the existing `"rules"` object without replacing other paths:
+The game only touches `/yutnori/rooms/{CODE}`. The `lastSeen` index is required by the room sweeper (its query fails without it). Add this block inside the existing `"rules"` object without replacing other paths:
 
 ```json
 "yutnori": {
   "rooms": {
+    ".indexOn": ["lastSeen"],
     "$code": {
       ".read": true,
       ".write": true,

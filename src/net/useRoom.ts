@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { applyAction, createGame, RuleError, type Action, type GameState } from '../game/rules'
 import { backend, playerId } from './index'
 import type { PlayerInfo, RoomData, RoomSettings } from './types'
@@ -39,6 +39,12 @@ export function useRoom(code: string, name: string) {
   const me = room?.players?.[playerId]
   const inGame = !!game && playerId in game.names
 
+  // Layout effects run before passive cleanups, so the join cleanup below sees the incoming name.
+  const latestName = useRef(name)
+  useLayoutEffect(() => {
+    latestName.current = name
+  }, [name])
+
   // Seat the player while the room is in the lobby; reconnect them whenever they already have a seat.
   const canSeat = !!room && (!!me || (!game && players.length < 6))
   useEffect(() => {
@@ -46,10 +52,12 @@ export function useRoom(code: string, name: string) {
     const taken = new Set(players.map((p) => p.team))
     const team = me?.team ?? [0, 1, 2, 3, 4, 5].find((t) => !taken.has(t)) ?? 0
     const info: PlayerInfo = { id: playerId, name, team, online: true, joinedAt: me?.joinedAt ?? Date.now() }
-    return backend.join(code, info, (err) => {
+    const stop = backend.join(code, info, (err) => {
       console.error('join failed', err)
       setConnError('방에 들어가지 못했어요')
     })
+    // A rename re-runs this effect without leaving; unmounting or switching rooms is a real leave.
+    return () => stop(latestName.current === name)
     // Only re-run when the seat itself changes, not on every room update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, canSeat, name])

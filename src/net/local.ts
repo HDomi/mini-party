@@ -64,11 +64,18 @@ export class LocalBackend implements Backend {
       const cur = room.players?.[player.id]
       room.players = { ...room.players, [player.id]: { ...player, ...cur, name: player.name, online: true } }
     })
-    const offline = () => this.mutate(code, (room) => room.players?.[player.id] && (room.players[player.id].online = false))
+    const offline = () =>
+      this.mutate(code, (room) => {
+        if (!room.players?.[player.id]) return
+        room.players[player.id].online = false
+        room.lastSeen = Date.now()
+      })
     window.addEventListener('pagehide', offline)
-    return () => {
+    return (leaving: boolean) => {
       window.removeEventListener('pagehide', offline)
-      offline()
+      const others = Object.values(this.read(code)?.players ?? {}).some((p) => p.id !== player.id && p.online)
+      if (leaving && !others) void this.deleteRoom(code)
+      else offline()
     }
   }
 
