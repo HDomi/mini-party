@@ -76,25 +76,56 @@ function listFiles(dir: string): string[] {
   })
 }
 
+// Asks for the password with an in-page form instead of prompt(): in-app browsers
+// (KakaoTalk, Instagram, ...) and dialog-suppressed tabs make prompt() return null
+// without showing anything, which used to look like an instant "wrong password".
 function loader(binUrl: string): string {
   return `(async()=>{
 const K='yutnori:pw';
-const deny=()=>{alert('비밀번호가 필요합니다');window.close();location.replace('about:blank')};
-let pw=null;try{pw=sessionStorage.getItem(K)}catch(e){}
-if(!pw)pw=prompt('비밀번호를 입력해 주세요');
-if(!pw)return deny();
+const bin=fetch(${JSON.stringify(binUrl)}).then(async r=>{if(!r.ok||/html/.test(r.headers.get('content-type')||''))throw 0;return new Uint8Array(await r.arrayBuffer())});
+bin.catch(()=>{});
+const ready=new Promise(r=>document.readyState==='loading'?document.addEventListener('DOMContentLoaded',r):r());
+const fail=async msg=>{await ready;document.body.textContent=msg};
+const s=crypto&&crypto.subtle;
+if(!s)return fail('이 브라우저에서는 열 수 없어요. 다른 브라우저로 열어 주세요.');
 let buf;
-try{const r=await fetch(${JSON.stringify(binUrl)});if(!r.ok||/html/.test(r.headers.get('content-type')||''))throw 0;buf=new Uint8Array(await r.arrayBuffer())}
-catch(e){document.body.textContent='불러오지 못했어요. 새로고침해 주세요.';return}
+const run=async pw=>{
+if(!buf)buf=await bin;
+let plain;
 try{
-const s=crypto.subtle;
 const base=await s.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
 const key=await s.deriveKey({name:'PBKDF2',salt:buf.slice(0,16),iterations:${ITERATIONS},hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
-const plain=await s.decrypt({name:'AES-GCM',iv:buf.slice(16,28)},key,buf.slice(28));
+plain=await s.decrypt({name:'AES-GCM',iv:buf.slice(16,28)},key,buf.slice(28));
+}catch(e){return false}
 try{sessionStorage.setItem(K,pw)}catch(e){}
+const g=document.getElementById('pw-gate');if(g)g.remove();
 const el=document.createElement('script');el.type='module';
 el.src=URL.createObjectURL(new Blob([plain],{type:'text/javascript'}));
 document.head.appendChild(el);
-}catch(e){try{sessionStorage.removeItem(K)}catch(_){}deny()}
+return true;
+};
+try{
+let saved=null;try{saved=sessionStorage.getItem(K)}catch(e){}
+// A stale saved password (e.g. after PLAY_PW changed) falls through to the form.
+if(saved){if(await run(saved))return;try{sessionStorage.removeItem(K)}catch(e){}}
+await ready;
+const gate=document.createElement('main');
+gate.id='pw-gate';gate.className='center-screen';gate.style.cssText='position:fixed;inset:0;z-index:10';
+gate.innerHTML='<form class="home-card"><h1 class="title small">슈퍼 <span>윷놀이</span></h1><p class="subtitle">비밀번호를 입력해 주세요</p><label class="field"><span>비밀번호</span><input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required></label><button class="btn primary big">들어가기</button><p class="err" hidden></p></form>';
+document.body.appendChild(gate);
+const form=gate.querySelector('form'),input=gate.querySelector('input'),btn=gate.querySelector('button'),err=gate.querySelector('.err');
+input.focus();
+form.addEventListener('submit',async e=>{
+e.preventDefault();
+if(!input.value||btn.disabled)return;
+btn.disabled=true;btn.textContent='확인 중…';err.hidden=true;
+let ok=false;
+try{ok=await run(input.value)}catch(e){return fail('불러오지 못했어요. 새로고침해 주세요.')}
+if(ok)return;
+btn.disabled=false;btn.textContent='들어가기';
+err.textContent='비밀번호가 틀렸어요';err.hidden=false;
+input.select();
+});
+}catch(e){fail('불러오지 못했어요. 새로고침해 주세요.')}
 })()`
 }
