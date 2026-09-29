@@ -4,6 +4,7 @@
 
 - 2–6 players, free-for-all or teams (2–3 teams), 2–5 pieces per team
 - Room codes + share links (`/#/ABCD`), reconnect-safe seats, spectators
+- 1:1 against a bot (`/#/bot`, easy / normal / hard), played entirely in the tab with no database traffic
 - Whole bundle is encrypted with a password at build time
 
 ## Develop
@@ -53,6 +54,12 @@ Outside a room the client closes its RTDB socket (`goOffline`) two seconds after
 ## Sound
 
 `src/ui/sound.ts` plays effects through Web Audio (background music is wired up but commented out for now). Volume starts at 0 and is saved in `localStorage` (`yutnori:volume`); the pill in the top-right corner sets it. Effects ship as `.ogg` and `.m4a` (Safari), converted with `afconvert -f m4af -d aac -b 96000 in.ogg out.m4a`. Sources and licenses are in `public/sfx/CREDITS.txt`.
+
+## Bot
+
+`src/game/bot.ts` has no per-situation rules. On its move it plays out every order of spending the pending results through `applyAction` and scores the resulting boards: each piece's expected throws to finish (solved once by value iteration over the board graph), the chance of being caught next turn, and the chance of catching an opponent. Levels differ in how often they play a random legal move and how much the capture odds count. `npm test` checks that hard beats random play and the easy level.
+
+`src/ui/Solo.tsx` runs the game in React state and feeds `GameView` the same `GameApi` shape `useRoom` provides. The game in progress is kept in `sessionStorage` (`yutnori:solo`) so a reload doesn't lose it.
 
 ## Password gate
 

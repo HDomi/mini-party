@@ -7,6 +7,7 @@ import {
   legalMoves,
   RESULT_LABEL,
   RESULT_STEPS,
+  type Action,
   type Destination,
   type GameState,
   type Piece,
@@ -14,7 +15,6 @@ import {
   type Team,
 } from '../game/rules'
 import { playerId } from '../net'
-import type { RoomApi } from '../net/useRoom'
 import { GameScene, type Preview } from '../scene/GameScene'
 import { HOP } from '../scene/Pieces'
 import { THROW_REVEAL_MS } from '../scene/YutSticks'
@@ -42,6 +42,17 @@ interface Option {
   dest: Destination
 }
 
+/** What the board needs from whoever runs the game: a shared room (useRoom) or a local game against the bot (useSoloGame). */
+export interface GameApi {
+  room: { players?: Record<string, { online: boolean }> } | null | undefined
+  inGame: boolean
+  hostId: string | null
+  error: string | null
+  act: (action: Action, proxy?: boolean) => Promise<void>
+  start: () => Promise<void>
+  toLobby: () => Promise<unknown>
+}
+
 /** How long everyone else must stay offline before the last player wins. Covers reloads. */
 const LAST_STANDING_GRACE_MS = 15_000
 
@@ -53,7 +64,7 @@ export function GameView({
   onLastStanding,
 }: {
   code: string
-  api: RoomApi
+  api: GameApi
   game: GameState
   onLeave: () => void
   onLastStanding: (team: Team) => void

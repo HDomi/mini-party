@@ -2,7 +2,15 @@ import { useState } from 'react'
 import { backend, makeRoomCode, playerId, saveName, savedName } from '../net'
 import { StickLogo } from './StickLogo'
 
-export function Home({ initialCode, onEnter }: { initialCode: string | null; onEnter: (name: string, code: string) => void }) {
+export function Home({
+  initialCode,
+  onEnter,
+  onSolo,
+}: {
+  initialCode: string | null
+  onEnter: (name: string, code: string) => void
+  onSolo: (name: string) => void
+}) {
   const [name, setName] = useState(savedName)
   const [code, setCode] = useState(initialCode ?? '')
   const [busy, setBusy] = useState(false)
@@ -34,6 +42,12 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
       setErr('서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요')
     }
     setBusy(false)
+  }
+
+  const solo = () => {
+    if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
+    saveName(trimmed)
+    onSolo(trimmed)
   }
 
   const join = () => {
@@ -74,6 +88,9 @@ export function Home({ initialCode, onEnter }: { initialCode: string | null; onE
           <>
             <button className="btn primary big" onClick={create} disabled={busy}>
               {busy ? '만드는 중…' : '새 방 만들기'}
+            </button>
+            <button className="btn big solo-btn" onClick={solo} disabled={busy}>
+              봇이랑 1:1
             </button>
             <div className="divider">
               <span>또는</span>
