@@ -48,6 +48,8 @@ The sweep job doesn't use the `github-pages` environment, so it needs **repo-lev
 
 GitHub pauses scheduled workflows after 60 days without repo activity; re-enable it from the Actions tab if that happens.
 
+Outside a room the client closes its RTDB socket (`goOffline`) two seconds after the last listener or write finishes, so tabs left on the home screen don't count against the Spark plan's 100 concurrent connections.
+
 ## Password gate
 
 `scripts/vite-plugin-password-gate.ts` encrypts the single JS bundle with AES-GCM (key from PBKDF2-SHA256, 600k iterations). `dist/` only contains the ciphertext and a small loader that asks for the password and decrypts in the browser. A wrong password shows an alert and closes the tab (or blanks it, since browsers only let scripts close windows they opened). The password is remembered in `sessionStorage` for the tab so reloads don't ask again.
@@ -68,7 +70,8 @@ The game only touches `/yutnori/rooms/{CODE}`. The `lastSeen` index is required 
     "$code": {
       ".read": true,
       ".write": true,
-      ".validate": "$code.matches(/^[A-Z0-9]{4}$/)"
+      ".validate": "$code.matches(/^[A-Z0-9]{4}$/) && newData.hasChildren(['createdAt', 'hostId'])",
+      "game": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 20000)" }
     }
   }
 }

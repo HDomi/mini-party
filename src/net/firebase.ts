@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app'
 import {
   getDatabase,
+  goOffline,
+  goOnline,
   onDisconnect,
   onValue,
   ref,
@@ -13,35 +15,73 @@ import {
 import { ROOM_TTL_MS, type Backend, type RoomData } from './types'
 
 const ROOT = 'yutnori/rooms'
+/** Grace period before closing the socket, so back-to-back holds (Home -> room, rename re-join) don't bounce it. */
+const IDLE_CLOSE_MS = 2000
 
 export class FirebaseBackend implements Backend {
   readonly kind = 'firebase' as const
   private db: Database
+
+  // Listeners, seats and in-flight writes each hold the connection. The socket closes once the last
+  // one lets go, so tabs sitting on Home don't count against the concurrent-connection quota.
+  private holds = 0
+  private idleTimer: ReturnType<typeof setTimeout> | undefined
 
   constructor(databaseURL: string) {
     const app = initializeApp({ databaseURL })
     this.db = getDatabase(app)
   }
 
+  private hold() {
+    clearTimeout(this.idleTimer)
+    if (this.holds++ === 0) goOnline(this.db)
+  }
+
+  private release() {
+    if (--this.holds > 0) return
+    this.idleTimer = setTimeout(() => goOffline(this.db), IDLE_CLOSE_MS)
+  }
+
+  /** Holds the connection until `fn` settles. Writes resolve on server ack, so nothing is cut off. */
+  private async held<T>(fn: () => Promise<T>): Promise<T> {
+    this.hold()
+    try {
+      return await fn()
+    } finally {
+      this.release()
+    }
+  }
+
   subscribe(code: string, cb: (room: RoomData | null) => void, onError?: (err: Error) => void) {
-    return onValue(
+    this.hold()
+    const unsub = onValue(
       ref(this.db, `${ROOT}/${code}`),
       (snap) => cb(snap.val()),
       (err) => onError?.(err),
     )
+    let released = false
+    return () => {
+      unsub()
+      if (released) return
+      released = true
+      this.release()
+    }
   }
 
-  async createRoom(code: string, room: RoomData) {
-    const res = await runTransaction(ref(this.db, `${ROOT}/${code}`), (cur: RoomData | null) => {
-      if (cur && Date.now() - cur.createdAt < ROOM_TTL_MS) return undefined
-      return room
+  createRoom(code: string, room: RoomData) {
+    return this.held(async () => {
+      const res = await runTransaction(ref(this.db, `${ROOT}/${code}`), (cur: RoomData | null) => {
+        if (cur && Date.now() - cur.createdAt < ROOM_TTL_MS) return undefined
+        return room
+      })
+      return res.committed
     })
-    return res.committed
   }
 
   join(code: string, player: Parameters<Backend['join']>[1], onError?: (err: Error) => void) {
     const roomRef = ref(this.db, `${ROOT}/${code}`)
     const playerRef = ref(this.db, `${ROOT}/${code}/players/${player.id}`)
+    this.hold()
     const unsub = onValue(
       ref(this.db, '.info/connected'),
       async (snap) => {
@@ -84,23 +124,27 @@ export class FirebaseBackend implements Backend {
         // Only when leaving: a re-join (e.g. after a rename) has already armed its own onDisconnect here.
         .then(() => (leaving ? onDisconnect(roomRef).cancel() : undefined))
         .catch(() => {})
+        // Released only now: going offline earlier would drop the leave write and fire the onDisconnect.
+        .finally(() => this.release())
     }
   }
 
-  async updatePlayer(code: string, id: string, patch: object) {
-    await update(ref(this.db, `${ROOT}/${code}/players/${id}`), patch)
+  updatePlayer(code: string, id: string, patch: object) {
+    return this.held(() => update(ref(this.db, `${ROOT}/${code}/players/${id}`), patch))
   }
 
-  async updateSettings(code: string, patch: object) {
-    await update(ref(this.db, `${ROOT}/${code}/settings`), patch)
+  updateSettings(code: string, patch: object) {
+    return this.held(() => update(ref(this.db, `${ROOT}/${code}/settings`), patch))
   }
 
-  async transactGame(code: string, fn: (game: string | null) => string | null | undefined) {
-    const res = await runTransaction(ref(this.db, `${ROOT}/${code}/game`), (cur: string | null) => fn(cur ?? null))
-    return res.committed
+  transactGame(code: string, fn: (game: string | null) => string | null | undefined) {
+    return this.held(async () => {
+      const res = await runTransaction(ref(this.db, `${ROOT}/${code}/game`), (cur: string | null) => fn(cur ?? null))
+      return res.committed
+    })
   }
 
-  async deleteRoom(code: string) {
-    await remove(ref(this.db, `${ROOT}/${code}`))
+  deleteRoom(code: string) {
+    return this.held(() => remove(ref(this.db, `${ROOT}/${code}`)))
   }
 }
