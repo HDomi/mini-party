@@ -17,7 +17,9 @@ import {
 import { playerId } from '../net'
 import { GameScene, type Preview } from '../scene/GameScene'
 import { HOP } from '../scene/Pieces'
+import { addShake } from '../scene/Shake'
 import { THROW_REVEAL_MS } from '../scene/YutSticks'
+import { CaughtSplash, type Caught } from './CaughtSplash'
 import { celebrateThrow, celebrateWin } from './effects'
 import { play } from './sound'
 
@@ -73,6 +75,7 @@ export function GameView({
   const [mountSeq] = useState(game.seq)
   const [revealed, setRevealed] = useState(game.seq)
   const [banner, setBanner] = useState<{ seq: number; text: string; sub: string | null; color: string } | null>(null)
+  const [caught, setCaught] = useState<Caught | null>(null)
   const [selPiece, setSelPiece] = useState<string | null>(null)
   const [hover, setHover] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -128,6 +131,41 @@ export function GameView({
     const t = window.setTimeout(() => setBanner((b) => (b?.seq === banner.seq ? null : b)), 1300)
     return () => window.clearTimeout(t)
   }, [banner])
+
+  // Once a capture lands: the victims get the splash, the capturer and everyone else a banner.
+  useEffect(() => {
+    if (event.type !== 'move' || !event.captured.length || event.seq <= mountSeq) return
+    const actor = game.teams.find((t) => t.members.includes(event.by))
+    const victims = [
+      ...new Set(event.captured.map((id) => game.pieces.find((p) => p.id === id)?.team).filter((t) => t !== undefined)),
+    ].map((t) => game.teams[t])
+    const mine = victims.find((t) => t.members.includes(playerId))
+    const t = window.setTimeout(
+      () => {
+        if (mine) {
+          setCaught({ seq: event.seq, by: game.names[event.by] ?? '?', color: mine.color, byColor: actor?.color ?? '#333' })
+          addShake(0.6)
+          navigator.vibrate?.([80, 40, 160])
+        } else
+          setBanner({
+            seq: event.seq,
+            text: '잡았다!',
+            sub: actor?.members.includes(playerId) ? '한 번 더!' : `${actor?.name ?? '?'} → ${victims.map((v) => v.name).join(', ')}`,
+            color: actor?.color ?? '#333',
+          })
+      },
+      (event.path.length * HOP + 0.05) * 1000,
+    )
+    return () => window.clearTimeout(t)
+    // Keyed on the event; names and teams are read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.seq])
+
+  useEffect(() => {
+    if (!caught) return
+    const t = window.setTimeout(() => setCaught((c) => (c?.seq === caught.seq ? null : c)), 2200)
+    return () => window.clearTimeout(t)
+  }, [caught])
 
   // Celebrate once the winning piece has landed (matches the overlay's delay).
   const winnerColor = game.winner !== null ? game.teams[game.winner].color : null
@@ -403,6 +441,8 @@ export function GameView({
           )}
         </footer>
       )}
+
+      {caught && <CaughtSplash key={caught.seq} caught={caught} />}
 
       {banner && (
         <div key={banner.seq} className="banner" style={{ '--c': banner.color } as CSSProperties}>
