@@ -19,6 +19,8 @@ export interface RoomData {
   players?: Record<string, PlayerInfo>
   /** Serialized GameState. Stored as a string to dodge RTDB's array/null quirks. */
   game?: string | null
+  /** When a player last went offline. `scripts/sweep-rooms.ts` deletes rooms idle past ROOM_IDLE_MS. */
+  lastSeen?: number
 }
 
 export interface Backend {
@@ -27,8 +29,11 @@ export interface Backend {
   subscribe(code: string, cb: (room: RoomData | null) => void, onError?: (err: Error) => void): () => void
   /** Creates the room unless a fresh one already uses the code. */
   createRoom(code: string, room: RoomData): Promise<boolean>
-  /** Registers the player and keeps `online` in sync until the returned fn is called. */
-  join(code: string, player: PlayerInfo, onError?: (err: Error) => void): () => void
+  /**
+   * Registers the player and keeps `online` in sync until the returned fn is called.
+   * Pass `leaving = true` when the player is leaving the room for good: the last one out deletes it.
+   */
+  join(code: string, player: PlayerInfo, onError?: (err: Error) => void): (leaving: boolean) => void
   updatePlayer(code: string, id: string, patch: Partial<PlayerInfo>): Promise<void>
   updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void>
   /** Atomic read-modify-write of the game. Return undefined from fn to abort. */
