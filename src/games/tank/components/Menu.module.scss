@@ -1,0 +1,412 @@
+@use '@/styles/abstracts' as *;
+
+// 포격전의 홈·로비·혼자하기·오류 화면이 같이 쓰는 카드 스타일.
+
+$accent: #e8742a;
+
+.screen {
+  // 전역 .btn.primary 와 .spinner 가 --red 를 쓴다. 포격전 화면은 주황색으로 바꾼다.
+  --red: #{$accent};
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  position: relative;
+  overflow-y: auto;
+  background: linear-gradient(#7cc6f2, #cdeefc 70%, #fdf1d8);
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  padding: 24px 24px 22px;
+  box-shadow:
+    0 6px 0 var(--ink),
+    var(--shadow);
+}
+
+.back {
+  display: inline-block;
+  margin: -10px 0 4px -8px;
+  text-decoration: none;
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 54px;
+  margin-top: 2px;
+  position: relative;
+  height: 44px;
+
+  > svg:first-child {
+    animation: recoil 2.4s ease-in-out infinite;
+  }
+  > i {
+    position: absolute;
+    left: calc(50% - 30px);
+    top: 0;
+    width: 60px;
+    height: 30px;
+    border: 3px dotted var(--ink);
+    border-bottom: 0;
+    border-radius: 60px 60px 0 0;
+    opacity: 0.5;
+  }
+}
+
+@keyframes recoil {
+  0%,
+  70%,
+  100% {
+    transform: translateX(0);
+  }
+  74% {
+    transform: translateX(-4px);
+  }
+}
+
+.title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1;
+  text-align: center;
+  margin: 12px 0 4px;
+  letter-spacing: -1px;
+
+  span {
+    color: $accent;
+  }
+  &.small {
+    font-size: 34px;
+  }
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--ink-soft);
+  margin: 6px 0 22px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+
+  span {
+    display: block;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 6px 4px;
+  }
+}
+
+.input {
+  width: 100%;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 18px;
+  background: #fff;
+  outline: none;
+
+  &:focus {
+    box-shadow: 0 0 0 4px rgba(232, 116, 42, 0.25);
+  }
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 18px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+}
+
+.joinRow {
+  display: flex;
+  gap: 10px;
+}
+.code {
+  flex: 1;
+  font-family: var(--display);
+  letter-spacing: 6px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.roomCode {
+  display: grid;
+  justify-items: end;
+  cursor: pointer;
+  user-select: none;
+  border: 0;
+  background: none;
+  padding: 0;
+
+  small {
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+  strong {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 34px;
+    letter-spacing: 5px;
+    line-height: 1;
+    color: $accent;
+  }
+  span {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-decoration: underline dotted;
+  }
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.ruleHint {
+  width: 100%;
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.seg {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+
+  button {
+    border: 0;
+    background: transparent;
+    padding: 6px 12px;
+    font-family: var(--display);
+    font-size: 15px;
+  }
+  button + button {
+    border-left: 2px solid var(--ink);
+  }
+  button.on {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  button:disabled:not(.on) {
+    opacity: 0.6;
+  }
+}
+
+.seats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.teamHead {
+  text-align: center;
+  font-family: var(--display);
+  font-size: 16px;
+  margin: 0 0 -4px;
+}
+
+.seat {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 10px 12px;
+  border-radius: 16px;
+  border: 2px dashed var(--line);
+  background: #fff;
+  font: inherit;
+  min-width: 0;
+
+  &.taken {
+    border-style: solid;
+    border-color: var(--ink);
+    animation: pop 0.3s ease-out;
+  }
+  &.mine {
+    box-shadow: 0 0 0 4px rgba(232, 116, 42, 0.3);
+  }
+  &:enabled {
+    cursor: pointer;
+  }
+  &:enabled:hover {
+    border-color: $accent;
+  }
+
+  small {
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+}
+
+.seatName {
+  font-family: var(--display);
+  font-size: 18px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &.empty {
+    color: var(--ink-soft);
+    font-family: var(--body);
+    font-size: 14px;
+  }
+  &.off {
+    opacity: 0.45;
+  }
+}
+
+.tag {
+  font-style: normal;
+  font-family: var(--body);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--gold);
+  flex: none;
+
+  &.me {
+    background: var(--ink);
+    color: var(--paper);
+  }
+}
+
+.watchers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+
+  > span:first-child {
+    margin-right: 2px;
+  }
+}
+.watcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink);
+  background: var(--bg-1);
+  border-radius: 8px;
+  padding: 2px 8px;
+
+  &.off {
+    opacity: 0.45;
+  }
+}
+.linkBtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  color: $accent;
+  text-decoration: underline;
+  margin-left: auto;
+}
+
+.nameRow {
+  margin-bottom: 14px;
+}
+
+.nameInput {
+  width: 7em;
+  min-width: 0;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 15px;
+  background: #fff;
+  outline: none;
+}
+.nameBtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  border-bottom: 2px dashed rgba(58, 42, 34, 0.25);
+
+  &:hover {
+    border-bottom-color: var(--ink);
+  }
+}
+
+@include mobile {
+  .title {
+    font-size: 44px;
+  }
+}
+
+.soloSettings {
+  display: grid;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 22px;
+
+  .inline {
+    justify-content: space-between;
+    gap: 14px;
+  }
+}

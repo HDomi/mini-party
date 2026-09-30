@@ -1,0 +1,541 @@
+@use '@/styles/abstracts' as *;
+
+.game {
+  // 전역 .btn.primary 가 --red 를 쓴다. 포격전 화면은 주황색으로 바꾼다.
+  --red: #e8742a;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  background: #cdeefc;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 0;
+  z-index: 20;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.btn.ghost) {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 3px 10px;
+  }
+}
+
+.chip {
+  font-family: var(--display);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 14px;
+}
+.code {
+  @extend .chip;
+  letter-spacing: 3px;
+}
+.spectator {
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.players {
+  position: absolute;
+  top: max(58px, calc(env(safe-area-inset-top) + 46px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px 4px 6px;
+  font-size: 15px;
+  opacity: 0.8;
+  transition:
+    transform 0.2s,
+    opacity 0.2s,
+    box-shadow 0.2s;
+
+  &.active {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow:
+      0 3px 0 var(--ink),
+      0 0 0 4px rgba(232, 116, 42, 0.4);
+  }
+  &.off .pname {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+  &.dead {
+    opacity: 0.5;
+  }
+}
+
+.pinfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hp {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    transition: width 0.4s;
+  }
+}
+
+.pname {
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22vw;
+
+  em {
+    font-style: normal;
+    font-family: var(--body);
+    font-size: 11px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+    vertical-align: 2px;
+  }
+}
+
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(480px, calc(100% - 24px));
+  // 독의 빈 띠가 뒤에 있는 판의 탭을 가로채면 안 된다
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.waiting) {
+    background: rgba(255, 250, 241, 0.88);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin: 0;
+  }
+}
+
+.notice {
+  margin: 0;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 5px 12px;
+  text-align: center;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(43, 29, 18, 0.35);
+  backdrop-filter: blur(3px);
+  animation: fade 0.35s both;
+}
+
+.card {
+  width: min(360px, 100%);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 26px 22px 18px;
+  text-align: center;
+  box-shadow: 0 8px 0 var(--ink);
+  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 44px;
+    margin: 6px 0 0;
+  }
+  > p {
+    color: var(--ink-soft);
+    margin: 6px 0 18px;
+  }
+  :global(.btn.big) small {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-left: 4px;
+  }
+}
+
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.reopen {
+  position: absolute;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.toast {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  white-space: nowrap;
+  animation: pop 0.25s ease-out;
+}
+
+@include mobile {
+  .players {
+    top: max(54px, calc(env(safe-area-inset-top) + 42px));
+  }
+  .player {
+    padding: 3px 9px 3px 5px;
+  }
+  .pname {
+    font-size: 13px;
+  }
+}
+
+.resign {
+  font-size: 13px !important;
+  padding: 3px 10px !important;
+}
+
+// ── 바람 ──
+.wind {
+  position: absolute;
+  top: max(108px, calc(env(safe-area-inset-top) + 96px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 250, 241, 0.9);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 13px;
+  pointer-events: none;
+
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 15px;
+    min-width: 3.2em;
+    text-align: center;
+  }
+}
+
+.windBar {
+  position: relative;
+  width: 90px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 1px);
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    background: var(--ink);
+  }
+  i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 4px;
+    background: #4aa3d8;
+    transition:
+      width 0.4s,
+      left 0.4s,
+      right 0.4s;
+  }
+}
+
+// ── 조작판 ──
+.panel {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 250, 241, 0.94);
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  padding: 10px;
+  box-shadow: 0 4px 0 var(--ink);
+  animation: pop 0.25s ease-out;
+  touch-action: none;
+  -webkit-touch-callout: none;
+
+  button {
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+.weapons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.weapon {
+  display: grid;
+  justify-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  padding: 4px 2px;
+  font: inherit;
+  line-height: 1.15;
+
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 15px;
+  }
+  small {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  &.on {
+    background: var(--ink);
+    color: var(--paper);
+
+    small {
+      color: var(--paper);
+    }
+  }
+  &:disabled {
+    opacity: 0.4;
+  }
+}
+
+.gauge {
+  --power: 0%;
+  position: relative;
+  height: 22px;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 12px;
+
+  span,
+  b {
+    position: relative;
+    z-index: 1;
+  }
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .hurry {
+    color: #d94436;
+    animation: breathe 0.6s ease-in-out infinite;
+  }
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--power);
+  background: linear-gradient(90deg, #ffd35a, #e8742a 70%, #d94436);
+}
+
+.lastMark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--last);
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pad {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 0 var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  user-select: none;
+
+  &:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: none;
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.move {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding-bottom: 9px;
+}
+
+.fuel {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    background: #4aa3d8;
+  }
+}
+
+.angle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 9px;
+
+  > span {
+    display: grid;
+    justify-items: center;
+    min-width: 48px;
+    font-family: var(--display);
+    font-size: 22px;
+    line-height: 1;
+
+    small {
+      font-family: var(--body);
+      font-size: 11px;
+      color: var(--ink-soft);
+    }
+  }
+}
+
+.fire {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  margin-bottom: 9px;
+  font-size: 21px !important;
+  user-select: none;
+}
+
+.keys {
+  margin: -2px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.bigTank {
+  display: block;
+  margin: 0 auto;
+}
+
+@include narrow {
+  .pad {
+    width: 40px;
+    height: 42px;
+  }
+  .angle > span {
+    min-width: 40px;
+    font-size: 19px;
+  }
+  .weapon b {
+    font-size: 13px;
+  }
+}

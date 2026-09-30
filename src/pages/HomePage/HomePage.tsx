@@ -91,15 +91,15 @@ export function HomePage() {
           {backend.kind === 'local' && <p>로컬 모드: 같은 브라우저의 탭끼리만 연결돼요</p>}
           <p>
             사진:{' '}
-            {GAMES.map((g, i) => (
-              <span key={g.id}>
+            {GAMES.flatMap((g) => (g.credit ? [{ id: g.id, credit: g.credit }] : [])).map(({ id, credit }, i) => (
+              <span key={id}>
                 {i > 0 && ' · '}
-                <a href={g.credit.url} target="_blank" rel="noreferrer">
-                  {g.credit.author}, “{g.credit.title}”
+                <a href={credit.url} target="_blank" rel="noreferrer">
+                  {credit.author}, “{credit.title}”
                 </a>{' '}
                 (
-                <a href={g.credit.licenseUrl} target="_blank" rel="noreferrer">
-                  {g.credit.license}
+                <a href={credit.licenseUrl} target="_blank" rel="noreferrer">
+                  {credit.license}
                 </a>
                 )
               </span>
@@ -112,7 +112,8 @@ export function HomePage() {
 }
 
 function GameTile({ game }: { game: GameEntry }) {
-  const style = { '--accent': game.color, '--cover': `url(${game.cover})` } as CSSProperties
+  // 작은 SVG 는 Vite 가 data URL 로 인라인하므로 따옴표로 감싼다.
+  const style = { '--accent': game.color, '--cover': `url("${game.cover}")` } as CSSProperties
   const body = (
     <>
       <span className={styles.cover} aria-hidden />

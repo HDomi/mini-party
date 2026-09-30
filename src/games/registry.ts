@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
 import { OmokApp } from './omok/OmokApp'
 import omokCover from './omok/assets/cover.webp'
+import tankCover from './tank/assets/cover.svg'
+import { TankApp } from './tank/TankApp'
 import yutCover from './yutnori/assets/cover.webp'
 import { YutnoriApp } from './yutnori/YutnoriApp'
 
@@ -25,7 +27,8 @@ export interface GameEntry {
   color: string
   /** 타일 배경에 옅게 까는 사진. */
   cover: string
-  credit: CoverCredit
+  /** 직접 그린 커버처럼 저작자 표시가 필요 없으면 비운다. */
+  credit?: CoverCredit
   /** 없으면 메인화면에 "준비 중"으로만 보인다. `sub` 는 slug 뒤의 경로(`''`, `bot`, `ABCD`). */
   App?: ComponentType<{ sub: string }>
 }
@@ -64,6 +67,16 @@ export const GAMES: GameEntry[] = [
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
     },
     App: OmokApp,
+  },
+  {
+    id: 'tank',
+    slug: 'tank',
+    title: '포격전',
+    tagline: '바람 읽고, 각도 맞추고, 쾅!',
+    tags: ['2~4명', '팀전', '봇'],
+    color: '#e8742a',
+    cover: tankCover,
+    App: TankApp,
   },
 ]
 
