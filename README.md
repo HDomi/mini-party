@@ -138,6 +138,7 @@ src/
       styles/           윷놀이 SCSS(원래 단일 CSS를 순서대로 나눈 것)
   net/                  공통 통신: Firebase / 로컬 백엔드, useRoom, RoomGame
   components/           공통 UI(VolumeControl)
+  games/*/assets/       게임 커버 사진. 출처는 같은 폴더 CREDITS.txt 와 registry 의 credit(메인화면 아래에 표시)
   audio/                효과음
   styles/               전역 SCSS: abstracts(변수·mixin), base, components
   utils/                storage 등

@@ -109,8 +109,8 @@ let saved=null;try{saved=sessionStorage.getItem(K)}catch(e){}
 if(saved){if(await run(saved))return;try{sessionStorage.removeItem(K)}catch(e){}}
 await ready;
 const gate=document.createElement('main');
-gate.id='pw-gate';gate.className='center-screen';gate.style.cssText='position:fixed;inset:0;z-index:10';
-gate.innerHTML='<form class="home-card"><h1 class="title small">미니 <span>파티</span></h1><p class="subtitle">비밀번호를 입력해 주세요</p><label class="field"><span>비밀번호</span><input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required></label><button class="btn primary big">들어가기</button><p class="err" hidden></p></form>';
+gate.id='pw-gate';gate.className='center-screen';gate.style.cssText='position:fixed;inset:0;z-index:10;background:linear-gradient(180deg,#9fdcff,#d9f3ff 55%,#f2fbe6)';
+gate.innerHTML='<form class="home-card"><h1 class="title small">미니 <span style="color:#57b85f">파티</span></h1><p class="subtitle">비밀번호를 입력해 주세요</p><label class="field"><span>비밀번호</span><input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required></label><button class="btn primary big" style="background:#57b85f">들어가기</button><p class="err" hidden></p></form>';
 document.body.appendChild(gate);
 const form=gate.querySelector('form'),input=gate.querySelector('input'),btn=gate.querySelector('button'),err=gate.querySelector('.err');
 input.focus();

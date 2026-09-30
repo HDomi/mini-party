@@ -24,4 +24,5 @@
 - 멀티플레이 게임은 `RoomGame`(`src/net/game.ts`)을 구현하고 `useRoom` 을 쓴다. 게임 추가 절차는 README 의 "게임 추가" 참고.
 - URL 에 `#` 을 쓰지 않는다(`src/router`). 라우트 이름은 `dist` 의 실제 폴더(`assets`, `sfx`)와 겹치면 안 된다.
 - 비밀번호 게이트가 단일 JS 번들만 암호화하므로 code splitting(dynamic import, lazy)을 쓰지 않는다.
+- 외부 이미지는 라이선스를 확인한 것만 쓴다(CC0, 퍼블릭 도메인, CC BY/BY-SA 등). 저작자 표시가 필요하면 같은 폴더 `CREDITS.txt` 와 `registry.ts` 의 `credit` 에 적는다. 메인화면 아래에 표시된다.
 - 주석·문서·UI 문구는 한국어로 쓴다.

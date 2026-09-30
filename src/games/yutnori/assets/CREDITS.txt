@@ -1,0 +1,5 @@
+cover.webp
+  원본: "Yut-nori" — 국립국어원
+        https://commons.wikimedia.org/wiki/File:Yut-nori.jpg
+  라이선스: CC BY-SA 2.0 KR — https://creativecommons.org/licenses/by-sa/2.0/kr/
+  변경: 잘라내기, 800px 로 축소, WebP 변환. 변경본도 같은 라이선스(CC BY-SA 2.0 KR)를 따른다.
