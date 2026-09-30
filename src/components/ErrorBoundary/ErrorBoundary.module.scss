@@ -1,0 +1,37 @@
+@use '@/styles/abstracts' as *;
+
+.screen {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg-1);
+}
+
+.card {
+  width: min(380px, 100%);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  padding: 24px 22px 20px;
+  text-align: center;
+  box-shadow:
+    0 6px 0 var(--ink),
+    var(--shadow);
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 30px;
+    margin: 0 0 8px;
+  }
+  p {
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+}
+
+.row {
+  display: grid;
+  gap: 10px;
+}
