@@ -133,3 +133,9 @@
   margin: -14px 0 4px -8px;
   text-decoration: none;
 }
+
+// 이미 시작한 판에 들어왔을 때 안내 카드의 버튼 묶음.
+.started-actions {
+  display: grid;
+  gap: 10px;
+}

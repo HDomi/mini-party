@@ -18,6 +18,7 @@ export function Room({
 }) {
   const api = useRoom(code, name, yutnori)
   const [forfeit, setForfeit] = useState<{ teamName: string; color: string } | null>(null)
+  const [watching, setWatching] = useState(false)
 
   // 한 판 더는 이 화면을 떠나지 않고 새 게임으로 바꿔 끼운다 (seq 는 1부터 다시 시작). 보드는
   // 공개/애니메이션 관리를 seq 기준으로 하므로 seq 가 뒤로 갈 때마다 다시 마운트한다.
@@ -63,6 +64,26 @@ export function Room({
   }
 
   if (!api.game) return <Lobby code={code} api={api} onLeave={onLeave} onRename={onRename} />
+  // 이미 시작한 판에 새로 들어왔다. 바로 관전 화면으로 보내지 않고 먼저 알린다.
+  // 이번 판이 끝나 로비로 돌아가면 useRoom 이 자리에 앉힌다. 원래 참가자는 me 가 있어 바로 판으로 돌아간다.
+  if (!api.me && !watching) {
+    return (
+      <main className="center-screen">
+        <div className="home-card">
+          <h2 className="title small">이미 시작한 판이에요</h2>
+          <p className="subtitle">지금은 관전만 할 수 있어요. 이번 판이 끝나고 방장이 로비로 돌아가면 자리에 앉을 수 있어요.</p>
+          <div className="started-actions">
+            <button className="btn primary big" onClick={() => setWatching(true)}>
+              관전하기
+            </button>
+            <button className="btn big" onClick={onLeave}>
+              처음으로
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
   return (
     <GameView
       key={board.round}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { playerId } from '@/net'
 import { useRoom } from '@/net/useRoom'
 import { MAPS } from '../game/world'
@@ -19,6 +19,7 @@ export function Room({
   onRename: (name: string) => void
 }) {
   const api = useRoom(code, name, tank)
+  const [watching, setWatching] = useState(false)
   const { room, inGame, hostId, error, act, flash, toLobby } = api
   const gameApi: GameApi = useMemo(
     () => ({ room, inGame, hostId, error, act: (a) => act(a), flash, toLobby }),
@@ -47,6 +48,26 @@ export function Room({
   }
 
   if (!api.game) return <Lobby code={code} api={api} onLeave={onLeave} onRename={onRename} />
+  // 이미 시작한 판에 새로 들어왔다. 바로 관전 화면으로 보내지 않고 먼저 알린다.
+  // 이번 판이 끝나 로비로 돌아가면 useRoom 이 자리에 앉힌다. 원래 참가자는 me 가 있어 바로 판으로 돌아간다.
+  if (!api.me && !watching) {
+    return (
+      <main className={styles.screen}>
+        <div className={styles.card}>
+          <h2 className={`${styles.title} ${styles.small}`}>이미 시작한 판이에요</h2>
+          <p className={styles.subtitle}>지금은 관전만 할 수 있어요. 이번 판이 끝나고 방장이 로비로 돌아가면 자리에 앉을 수 있어요.</p>
+          <div className={styles.stack}>
+            <button className="btn primary big" onClick={() => setWatching(true)}>
+              관전하기
+            </button>
+            <button className="btn big" onClick={onLeave}>
+              처음으로
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
   // 맵이 생기기 전 형식(지형이 숫자 배열)으로 시작한 판은 지금 코드로 그릴 수 없다.
   if (typeof api.game.terrain !== 'string' || !MAPS[api.game.map]) {
     const isHost = api.hostId === playerId
