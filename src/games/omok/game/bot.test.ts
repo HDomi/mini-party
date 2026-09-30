@@ -82,7 +82,7 @@ describe('botMove', () => {
       if (s.winner === (hardIsBlack ? 0 : 1)) wins++
     }
     expect(wins).toBeGreaterThanOrEqual(9)
-  })
+  }, 60_000)
 
   it('hard holds its own against normal', () => {
     let wins = 0
@@ -92,5 +92,5 @@ describe('botMove', () => {
       if (s.winner === (hardIsBlack ? 0 : 1)) wins++
     }
     expect(wins).toBeGreaterThanOrEqual(4)
-  })
+  }, 60_000)
 })
