@@ -1,5 +1,5 @@
 import confetti from 'canvas-confetti'
-import type { Result } from '../game/rules'
+import type { Result } from './game/rules'
 
 const base = { disableForReducedMotion: true, zIndex: 26 } as const
 

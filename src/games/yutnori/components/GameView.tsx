@@ -14,14 +14,14 @@ import {
   type Result,
   type Team,
 } from '../game/rules'
-import { playerId } from '../net'
+import { playerId } from '@/net'
 import { GameScene, type Preview } from '../scene/GameScene'
 import { HOP } from '../scene/Pieces'
 import { addShake } from '../scene/Shake'
 import { THROW_REVEAL_MS } from '../scene/YutSticks'
 import { CaughtSplash, type Caught } from './CaughtSplash'
-import { celebrateThrow, celebrateWin } from './effects'
-import { play } from './sound'
+import { celebrateThrow, celebrateWin } from '../effects'
+import { play } from '@/audio/sound'
 
 function usePortrait() {
   const get = () => window.innerWidth < window.innerHeight * 0.9

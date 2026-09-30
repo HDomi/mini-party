@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { applyAction, createGame, RuleError, type Action, type GameState } from '../game/rules'
+import { applyAction, createGame, RuleError, type Action, type GameState } from '../games/yutnori/game/rules'
 import { backend, playerId } from './index'
 import type { PlayerInfo, RoomData, RoomSettings } from './types'
 

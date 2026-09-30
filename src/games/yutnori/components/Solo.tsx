@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { botAction, type BotLevel } from '../game/bot'
 import { applyAction, createGame, currentPlayer, GOAL, RuleError, type Action, type GameState } from '../game/rules'
-import { playerId } from '../net'
+import { playerId } from '@/net'
 import { HOP } from '../scene/Pieces'
 import { THROW_REVEAL_MS } from '../scene/YutSticks'
 import { GameView, type GameApi } from './GameView'

@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { GOAL, type GameState, type Piece } from '../game/rules'
-import { play, type SoundName } from '../ui/sound'
+import { play, type SoundName } from '@/audio/sound'
 import { SafeHtml } from './SafeHtml'
 import { BOARD_TOP, nodePos, PIECE_H, restingPositions, type Vec3 } from './layout'
 

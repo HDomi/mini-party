@@ -1,0 +1,184 @@
+.lobby {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  position: relative;
+  overflow-y: auto;
+}
+
+.scene {
+  position: absolute !important;
+  inset: 0;
+}
+.scene.backdrop {
+  opacity: 0.55;
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+.lobby-card {
+  z-index: 1;
+  padding-top: 18px;
+}
+
+.lobby-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.room-code {
+  display: grid;
+  justify-items: end;
+  cursor: pointer;
+  user-select: none;
+}
+.room-code small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.room-code strong {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: 5px;
+  line-height: 1;
+  color: var(--red);
+}
+.room-code span {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-decoration: underline dotted;
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.seg {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  padding: 7px 14px;
+  font-family: var(--display);
+  font-size: 16px;
+}
+.seg button + button {
+  border-left: 2px solid var(--ink);
+}
+.seg button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.seg.small button {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+.seg button:disabled:not(.on) {
+  opacity: 0.6;
+}
+
+.players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.players li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid var(--line);
+  animation: pop 0.3s ease-out;
+}
+.players li.me {
+  border-color: var(--ink);
+}
+.players li.off {
+  opacity: 0.45;
+}
+.players li.empty {
+  justify-content: center;
+  color: var(--ink-soft);
+  border-style: dashed;
+  background: transparent;
+  font-size: 14px;
+}
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: none;
+}
+.pname {
+  flex: 1;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.crown,
+.you {
+  font-style: normal;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--gold);
+}
+.you {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.team-pick {
+  display: flex;
+  gap: 4px;
+}
+.team-pick button {
+  border: 2px solid var(--team);
+  background: #fff;
+  color: var(--team);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-family: var(--display);
+  font-size: 13px;
+}
+.team-pick button.on {
+  background: var(--team);
+  color: #fff;
+}
+.team-pick button:disabled:not(.on) {
+  opacity: 0.35;
+}
+
+.count {
+  text-align: right;
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 8px 4px 14px;
+}

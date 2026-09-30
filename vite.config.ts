@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { passwordGate } from './scripts/vite-plugin-password-gate.ts'
@@ -7,6 +8,9 @@ import { passwordGate } from './scripts/vite-plugin-password-gate.ts'
 export default defineConfig(({ command, isPreview }) => ({
   base: command === 'build' || isPreview ? (process.env.VITE_BASE ?? '/super-yutnori/') : '/',
   plugins: [react(), passwordGate(process.env.PLAY_PW)],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   build: {
     sourcemap: false,
     chunkSizeWarningLimit: 2000,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { backend, makeRoomCode, playerId, saveName, savedName } from '../net'
+import { backend, makeRoomCode, playerId, saveName, savedName } from '@/net'
 import { StickLogo } from './StickLogo'
 
 export function Home({

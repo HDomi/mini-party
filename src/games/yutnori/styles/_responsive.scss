@@ -1,0 +1,27 @@
+@use '@/styles/abstracts' as *;
+
+@include mobile {
+  .title {
+    font-size: 44px;
+  }
+  .log {
+    display: none;
+  }
+  .throw-btn {
+    width: 112px;
+    height: 112px;
+    font-size: 19px;
+  }
+  .chip {
+    font-size: 19px;
+    min-width: 48px;
+    padding: 5px 11px;
+  }
+  .tray-label {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+  .tray-label b {
+    font-size: 13px;
+  }
+}

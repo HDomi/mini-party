@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Home } from './ui/Home'
-import { Room } from './ui/Room'
-import { Solo } from './ui/Solo'
-import { VolumeControl } from './ui/VolumeControl'
-import { saveName, savedName } from './net'
+import { Home } from './components/Home'
+import { Room } from './components/Room'
+import { Solo } from './components/Solo'
+import { VolumeControl } from '@/components/VolumeControl'
+import { saveName, savedName } from '@/net'
+import './styles/index.scss'
 
 function codeFromHash(): string | null {
   const m = location.hash.match(/^#\/([A-Z0-9]{4})$/i)

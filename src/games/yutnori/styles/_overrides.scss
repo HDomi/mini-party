@@ -1,0 +1,14 @@
+@use '@/styles/abstracts' as *;
+
+// HUD 와 로비 헤더가 고정된 볼륨 필에 가려지지 않게 한다.
+.hud-top {
+  padding-right: 150px;
+}
+.lobby {
+  padding-top: 60px;
+}
+@include narrow {
+  .hud-top {
+    padding-right: 104px;
+  }
+}

@@ -1,0 +1,129 @@
+.home {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 15% 85%, rgba(217, 68, 54, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(61, 139, 255, 0.1), transparent 40%);
+}
+
+.home-card,
+.lobby-card {
+  width: min(420px, 100%);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  padding: 28px 24px 24px;
+  box-shadow:
+    0 6px 0 var(--ink),
+    var(--shadow);
+  position: relative;
+}
+
+.title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1;
+  text-align: center;
+  margin: 8px 0 4px;
+  letter-spacing: -1px;
+}
+.title span {
+  color: var(--red);
+}
+.title.small {
+  font-size: 34px;
+}
+.subtitle {
+  text-align: center;
+  color: var(--ink-soft);
+  margin: 6px 0 22px;
+}
+
+.stick-logo {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  height: 64px;
+  margin-top: -4px;
+}
+.stick-logo i {
+  width: 14px;
+  height: 60px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #8b5530, #b87a48 50%, #8b5530);
+  border: 2px solid var(--ink);
+  animation: toss 2.4s ease-in-out infinite;
+  position: relative;
+}
+.stick-logo i::after {
+  content: '×';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #3b2112;
+  font-size: 13px;
+  font-weight: 700;
+}
+.stick-logo i.flat {
+  background: linear-gradient(90deg, #eccf9f, #f7e3bf 50%, #eccf9f);
+}
+.stick-logo i.flat::after {
+  content: '';
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+.field span {
+  display: block;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0 0 6px 4px;
+}
+.field input,
+.code-input {
+  width: 100%;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 18px;
+  background: #fff;
+  outline: none;
+}
+.field input:focus,
+.code-input:focus {
+  box-shadow: 0 0 0 4px rgba(217, 68, 54, 0.2);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 18px 0;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.join-row {
+  display: flex;
+  gap: 10px;
+}
+.code-input {
+  flex: 1;
+  font-family: var(--display);
+  letter-spacing: 6px;
+  text-align: center;
+  text-transform: uppercase;
+}

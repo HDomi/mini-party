@@ -1,5 +1,6 @@
 import { useRef, useSyncExternalStore, type PointerEvent } from 'react'
-import { getVolume, setVolume, subscribeVolume } from './sound'
+import { getVolume, setVolume, subscribeVolume } from '@/audio/sound'
+import styles from './VolumeControl.module.scss'
 
 /** 오른쪽 위에 고정된 볼륨 바. 드래그하거나 클릭해서 조절하고, 스피커로 음소거를 토글한다. */
 export function VolumeControl() {
@@ -14,9 +15,9 @@ export function VolumeControl() {
   }
 
   return (
-    <div className="volume">
+    <div className={styles.volume}>
       <button
-        className="volume-icon"
+        className={styles.icon}
         onClick={() => setVolume(volume > 0 ? 0 : lastOn.current)}
         aria-label={volume > 0 ? '음소거' : '소리 켜기'}
       >
@@ -24,7 +25,7 @@ export function VolumeControl() {
       </button>
       <div
         ref={bar}
-        className="volume-bar"
+        className={styles.bar}
         role="slider"
         tabIndex={0}
         aria-label="음량"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useRoom } from '../net/useRoom'
+import { useRoom } from '@/net/useRoom'
 import { ForfeitWin } from './ForfeitWin'
 import { GameView } from './GameView'
 import { Lobby } from './Lobby'

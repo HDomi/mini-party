@@ -1,0 +1,108 @@
+.caught {
+  position: absolute;
+  inset: 0;
+  z-index: 26;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(40, 20, 60, 0.15) 30%, rgba(170, 20, 40, 0.55) 100%);
+  animation: caught-fade 2.2s ease both;
+}
+.caught-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  animation: caught-drop 0.55s cubic-bezier(0.3, 1.7, 0.5, 1) both, caught-sob 0.36s 0.55s ease-in-out 4;
+}
+.caught-piece {
+  width: clamp(120px, 30vw, 180px);
+  filter: drop-shadow(0 6px 0 rgba(58, 42, 34, 0.35));
+}
+.caught-piece .tear {
+  fill: #6ec3ff;
+  stroke: var(--ink);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tear 0.7s ease-in infinite;
+}
+.caught-piece .t2 {
+  animation-delay: 0.2s;
+}
+.caught-piece .t3 {
+  animation-delay: 0.35s;
+}
+.caught-piece .t4 {
+  animation-delay: 0.5s;
+}
+.caught strong {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(56px, 15vw, 120px);
+  line-height: 1;
+  color: var(--c);
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 7px 0 var(--ink);
+}
+.caught-by {
+  font-family: var(--display);
+  font-size: 22px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 3px 14px;
+}
+.caught-by b {
+  font-weight: 400;
+  color: var(--by);
+  -webkit-text-stroke: 0.6px var(--ink);
+}
+.caught-taunt {
+  font-family: var(--display);
+  font-size: 17px;
+  color: #fff;
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+@keyframes caught-fade {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes caught-drop {
+  from {
+    transform: translateY(-60vh) rotate(-12deg);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes caught-sob {
+  25% {
+    transform: translateX(-6px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(6px) rotate(2deg);
+  }
+}
+@keyframes tear {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(34px) scale(1);
+    opacity: 0;
+  }
+}
