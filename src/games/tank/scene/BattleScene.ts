@@ -325,9 +325,12 @@ export class BattleScene {
     return { fit, s, width: this.w / s, base, visH: (base - top) / s }
   }
 
-  /** 재생 시각의 시뮬레이션 스텝. */
+  /**
+   * 재생 시각의 시뮬레이션 스텝. rAF 가 넘겨 주는 프레임 시각은 재생을 시작한 `performance.now()` 보다 이를 수 있어
+   * 음수가 나온다. 그대로 쓰면 궤적을 -1 번째 점부터 읽어 NaN 이 되고 카메라가 망가진다.
+   */
   private stepAt(p: Playing, now: number) {
-    return (((now - p.t0) / 1000) * PLAY_SPEED) / DT
+    return Math.max(0, (((now - p.t0) / 1000) * PLAY_SPEED) / DT)
   }
 
   /** 스텝 `step` 에서 포탄 위치. 끝났으면 null. */
