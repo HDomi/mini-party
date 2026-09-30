@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { TEAM_COLORS, TEAM_NAMES } from '../game/rules'
 import { playerId } from '@/net'
-import type { RoomApi } from '@/net/useRoom'
+import type { YutRoomApi } from '../room'
 import { Backdrop } from './Backdrop'
 
 export function Lobby({
@@ -11,7 +11,7 @@ export function Lobby({
   onRename,
 }: {
   code: string
-  api: RoomApi
+  api: YutRoomApi
   onLeave: () => void
   onRename: (name: string) => void
 }) {

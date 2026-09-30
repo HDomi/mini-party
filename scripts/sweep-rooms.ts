@@ -56,7 +56,7 @@ async function main() {
   const now = Date.now()
 
   // `lastSeen`이 없는 방이 먼저 정렬되므로 오래된 방과 stub도 함께 걸린다.
-  // /yutnori/$key/rooms에 `.indexOn: ["lastSeen"]`이 있어야 하며, 없으면 서버가 400으로 응답한다.
+  // /miniparty/$key/rooms에 `.indexOn: ["lastSeen"]`이 있어야 하며, 없으면 서버가 400으로 응답한다.
   const query = new URLSearchParams({
     orderBy: JSON.stringify('lastSeen'),
     endAt: String(now - ROOM_IDLE_MS),

@@ -6,18 +6,17 @@ export interface PlayerInfo {
   joinedAt: number
 }
 
-export interface RoomSettings {
-  teamMode: boolean
-  teamCount: number
-  piecesPerTeam: number
-}
+/** 게임별 방 설정. 각 게임이 자기 형태를 정하고, 공통 계층은 내용을 모른다. */
+export type RoomSettings = Record<string, unknown>
 
-export interface RoomData {
+export interface RoomData<S extends object = RoomSettings> {
+  /** 이 방에서 하는 게임. 방 코드는 게임끼리 공유하므로 코드만으로 어느 게임인지 알 수 있다. */
+  gameType: string
   createdAt: number
   hostId: string
-  settings: RoomSettings
+  settings: S
   players?: Record<string, PlayerInfo>
-  /** 직렬화된 GameState. RTDB의 배열/null 관련 특이 동작을 피하려고 문자열로 저장한다. */
+  /** 직렬화된 게임 상태. RTDB의 배열/null 관련 특이 동작을 피하려고 문자열로 저장한다. */
   game?: string | null
   /** 플레이어가 마지막으로 오프라인이 된 시각. `scripts/sweep-rooms.ts`가 ROOM_IDLE_MS 넘게 비어 있던 방을 삭제한다. */
   lastSeen?: number
@@ -35,7 +34,7 @@ export interface Backend {
    */
   join(code: string, player: PlayerInfo, onError?: (err: Error) => void): (leaving: boolean) => void
   updatePlayer(code: string, id: string, patch: Partial<PlayerInfo>): Promise<void>
-  updateSettings(code: string, patch: Partial<RoomSettings>): Promise<void>
+  updateSettings(code: string, patch: RoomSettings): Promise<void>
   /** 게임의 원자적 read-modify-write. fn에서 undefined를 반환하면 중단한다. */
   transactGame(code: string, fn: (game: string | null) => string | null | undefined): Promise<boolean>
   deleteRoom(code: string): Promise<void>

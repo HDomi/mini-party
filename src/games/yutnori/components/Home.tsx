@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { backend, makeRoomCode, playerId, saveName, savedName } from '@/net'
+import { backend, openRoom, saveName, savedName } from '@/net'
+import { yutnori } from '../room'
 import { StickLogo } from './StickLogo'
 
 export function Home({
@@ -26,16 +27,8 @@ export function Home({
     if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
     setBusy(true)
     try {
-      for (let i = 0; i < 5; i++) {
-        const c = makeRoomCode()
-        const ok = await backend.createRoom(c, {
-          createdAt: Date.now(),
-          hostId: playerId,
-          settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 },
-          game: null,
-        })
-        if (ok) return enter(c)
-      }
+      const c = await openRoom(yutnori.id, { ...yutnori.defaultSettings })
+      if (c) return enter(c)
       setErr('방을 만들지 못했어요. 다시 시도해 주세요')
     } catch (e) {
       console.error(e)

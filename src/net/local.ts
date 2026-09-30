@@ -3,11 +3,11 @@ import { ROOM_TTL_MS, type Backend, type PlayerInfo, type RoomData, type RoomSet
 // 개발용 backend: 방은 localStorage에 저장하고 탭끼리는 BroadcastChannel로 동기화한다.
 // 같은 브라우저에서 탭을 여러 개 열면 혼자서 대전할 수 있다.
 
-const key = (code: string) => `yutnori:room:${code}`
+const key = (code: string) => `party:room:${code}`
 
 export class LocalBackend implements Backend {
   readonly kind = 'local' as const
-  private channel = new BroadcastChannel('yutnori')
+  private channel = new BroadcastChannel('party')
   private listeners = new Map<string, Set<(room: RoomData | null) => void>>()
 
   constructor() {
@@ -85,7 +85,7 @@ export class LocalBackend implements Backend {
     })
   }
 
-  async updateSettings(code: string, patch: Partial<RoomSettings>) {
+  async updateSettings(code: string, patch: RoomSettings) {
     this.mutate(code, (room) => {
       room.settings = { ...room.settings, ...patch }
     })

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useRoom } from '@/net/useRoom'
+import { yutnori } from '../room'
 import { ForfeitWin } from './ForfeitWin'
 import { GameView } from './GameView'
 import { Lobby } from './Lobby'
@@ -15,7 +16,7 @@ export function Room({
   onLeave: () => void
   onRename: (name: string) => void
 }) {
-  const api = useRoom(code, name)
+  const api = useRoom(code, name, yutnori)
   const [forfeit, setForfeit] = useState<{ teamName: string; color: string } | null>(null)
 
   // 한 판 더는 이 화면을 떠나지 않고 새 게임으로 바꿔 끼운다 (seq 는 1부터 다시 시작). 보드는
@@ -47,7 +48,7 @@ export function Room({
       </main>
     )
   }
-  if (api.room === null) {
+  if (api.room === null || api.room.gameType !== yutnori.id) {
     return (
       <main className="center-screen">
         <div className="home-card">

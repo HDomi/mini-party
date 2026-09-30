@@ -80,7 +80,7 @@ describe('FirebaseBackend connection', () => {
 
   it('holds the connection for a write made from Home', async () => {
     const b = new FirebaseBackend('https://x', KEY)
-    const created = b.createRoom('ABCD', { createdAt: 0, hostId: 'a', settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 } })
+    const created = b.createRoom('ABCD', { gameType: 'yutnori', createdAt: 0, hostId: 'a', settings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 } })
     await vi.advanceTimersByTimeAsync(5000)
     expect(db.goOffline).not.toHaveBeenCalled()
     await settle()

@@ -3,12 +3,14 @@
 // 쓸 만한 곡을 찾을 때까지 배경음악은 꺼 둔다: 아래 `bgm` 블록은 주석 처리돼 있고,
 // BGM_URL 에 반복 재생용 파일을 두고 주석을 풀면 다시 켜진다.
 
+import { readStored } from '@/utils/storage'
+
 const BASE = `${import.meta.env.BASE_URL}sfx/`
 // Safari 는 AAC 는 디코딩하지만 Vorbis 는 항상 되지는 않으므로, 모든 효과음을 두 형식으로 둔다.
 const EXT = typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'm4a'
 // const BGM_URL = `${BASE}bgm.mp3`
 // const BGM_GAIN = 0.35
-const KEY = 'yutnori:volume'
+const KEY = 'party:volume'
 
 /** 소리마다 `n` 개의 변형을 두고, 반복이 기계적으로 들리지 않도록 무작위로 고른다. */
 const SOUNDS = {
@@ -35,7 +37,7 @@ const listeners = new Set<() => void>()
 
 function readVolume(): number {
   try {
-    const v = Number(localStorage.getItem(KEY))
+    const v = Number(readStored(localStorage, KEY, 'yutnori:volume'))
     return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0
   } catch {
     return 0

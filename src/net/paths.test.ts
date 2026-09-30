@@ -3,7 +3,7 @@ import { roomsRoot } from './paths'
 
 describe('roomsRoot', () => {
   it('nests rooms under the key', () => {
-    expect(roomsRoot('abcdef0123456789')).toBe('yutnori/abcdef0123456789/rooms')
+    expect(roomsRoot('abcdef0123456789')).toBe('miniparty/abcdef0123456789/rooms')
   })
 
   it('rejects missing, short or path-breaking keys', () => {
