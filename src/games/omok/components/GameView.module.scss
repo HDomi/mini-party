@@ -1,0 +1,358 @@
+@use '@/styles/abstracts' as *;
+
+.game {
+  // 전역 .btn.primary 가 --red 를 쓴다. 오목 화면은 파란색으로 바꾼다.
+  --red: #2f8fd8;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  background: radial-gradient(circle at 50% 40%, #6f8f6a, #34493a 80%);
+}
+
+.scene {
+  position: absolute !important;
+  inset: 0;
+}
+
+.top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 0;
+  z-index: 20;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.btn.ghost) {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 3px 10px;
+  }
+}
+
+.chip {
+  font-family: var(--display);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 14px;
+}
+.code {
+  @extend .chip;
+  letter-spacing: 3px;
+}
+.rule {
+  @extend .chip;
+}
+.spectator {
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.players {
+  position: absolute;
+  top: max(58px, calc(env(safe-area-inset-top) + 46px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100% - 32px);
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px 6px 8px;
+  font-size: 15px;
+  opacity: 0.75;
+  transition:
+    transform 0.2s,
+    opacity 0.2s,
+    box-shadow 0.2s;
+
+  &.active {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow:
+      0 3px 0 var(--ink),
+      0 0 0 4px rgba(47, 143, 216, 0.35);
+  }
+  &.off .pname {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: none;
+  box-shadow: inset -2px -3px 0 rgba(0, 0, 0, 0.18);
+}
+.active .swatch {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+.pname {
+  font-family: var(--display);
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28vw;
+
+  em {
+    font-style: normal;
+    font-family: var(--body);
+    font-size: 11px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+    vertical-align: 2px;
+  }
+}
+
+.count {
+  font-size: 13px;
+  color: var(--paper);
+  background: rgba(43, 29, 18, 0.55);
+  border-radius: 8px;
+  padding: 2px 8px;
+  flex: none;
+}
+
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(460px, calc(100% - 32px));
+  // 독의 빈 띠가 뒤에 있는 판의 탭을 가로채면 안 된다
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.waiting) {
+    background: rgba(255, 250, 241, 0.88);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin: 0;
+  }
+}
+
+.notice {
+  margin: 0;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 5px 12px;
+  text-align: center;
+}
+
+.prompt {
+  margin: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 8px 18px;
+  font-size: 16px;
+  box-shadow: 0 3px 0 var(--ink);
+  text-align: center;
+  animation: pop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+  }
+  small {
+    display: block;
+    font-size: 12px;
+    color: var(--red-deep);
+  }
+}
+
+.help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 250, 241, 0.94);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 8px 8px 8px 16px;
+  animation: pop 0.25s ease-out;
+
+  p {
+    margin: 0 4px 0 0;
+    font-size: 15px;
+  }
+  :global(.btn) {
+    padding: 7px 14px;
+    font-size: 15px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+
+  :global(.btn) {
+    font-size: 14px;
+  }
+}
+
+.banner {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+
+  strong {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(90px, 22vw, 180px);
+    -webkit-text-stroke: 4px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 8px 0 var(--ink);
+    animation: stamp 1.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(2.4) rotate(-8deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1) rotate(-4deg);
+    opacity: 0;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(43, 29, 18, 0.35);
+  backdrop-filter: blur(3px);
+  animation: fade 0.35s both;
+}
+
+.card {
+  width: min(360px, 100%);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 26px 22px 18px;
+  text-align: center;
+  box-shadow: 0 8px 0 var(--ink);
+  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 44px;
+    margin: 6px 0 0;
+  }
+  > p {
+    color: var(--ink-soft);
+    margin: 6px 0 18px;
+  }
+  :global(.btn.big) small {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-left: 4px;
+  }
+}
+
+.bigSwatch {
+  display: block;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  box-shadow: inset -5px -7px 0 rgba(0, 0, 0, 0.18);
+}
+
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.reopen {
+  position: absolute;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.toast {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  white-space: nowrap;
+  animation: pop 0.25s ease-out;
+}
+
+@include mobile {
+  .players {
+    top: max(54px, calc(env(safe-area-inset-top) + 42px));
+  }
+  .player {
+    padding: 4px 10px 4px 6px;
+  }
+  .pname {
+    font-size: 15px;
+  }
+}

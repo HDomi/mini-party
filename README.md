@@ -9,7 +9,7 @@
 게임:
 
 - **윷놀이**(`/yut`): 3D(react-three-fiber), 2~6명, 개인전 또는 팀전(2~3팀), 팀당 말 2~5개. 방 코드 + 공유 링크(`/yut/ABCD`), 재접속해도 유지되는 자리, 관전자. 봇과 1:1(`/yut/bot`, 쉬움 / 보통 / 어려움)은 탭 안에서만 진행되며 DB 트래픽이 없다
-- **오목**: 준비 중
+- **오목**(`/omok`): 3D(react-three-fiber), 흑백 2명 + 관전자. 렌주룰(흑 삼삼·사사·장목 금지, 판에 × 로 표시) 또는 자유룰. 한 판 더 하면 흑백이 바뀐다. 상대가 15초 넘게 나가 있으면 기권 처리된다. 봇과 1:1(`/omok/bot`, 쉬움 / 보통 / 어려움, 무르기 가능)은 탭 안에서만 진행된다
 
 ## 개발
 
@@ -67,6 +67,8 @@ GitHub는 저장소 활동이 60일간 없으면 예약 워크플로를 일시 �
 ## 봇
 
 `src/games/yutnori/game/bot.ts`에는 상황별 규칙이 없다. 자기 차례가 되면 남은 결과를 쓰는 모든 순서를 `applyAction`으로 끝까지 진행해 보고, 그 결과 판을 점수화한다. 기준은 각 말이 완주하기까지의 기대 던지기 횟수(판 그래프에 대해 value iteration으로 한 번 계산), 다음 턴에 잡힐 확률, 상대 말을 잡을 확률이다. 난이도별 차이는 무작위 합법 수를 두는 빈도와 잡기 확률의 가중치다. `npm test`에서 어려움이 무작위 플레이와 쉬움 난이도를 이기는지 확인한다.
+
+`src/games/omok/game/bot.ts`는 돌 주변 빈칸마다 내가 두면 생기는 모양과 상대가 두면 생기는 모양(오목, 4, 열린 3)을 `analyze`로 보고, 결정적인 수(오목, 막기, 열린 4, 4-3)를 먼저 고른다. 나머지는 5칸 창 점수로 비교한다. 어려움은 상위 후보마다 상대의 좋은 응수를 두어 보고 가장 나쁜 경우가 가장 나은 수를 고른다. 렌주 금수 판정은 삼삼의 3을 이루는 빈칸이 다시 금수인지까지는 따지지 않는다.
 
 `src/games/yutnori/components/Solo.tsx`는 게임을 React state로 돌리고, `useRoom`이 제공하는 것과 같은 형태의 `GameApi`를 `GameView`에 넘긴다. 진행 중인 게임은 `sessionStorage`(`yutnori:solo`)에 보관하므로 새로고침해도 사라지지 않는다.
 
@@ -136,6 +138,12 @@ src/
       scene/            three.js 씬: 판, 말, 트레이, 윷가락
       components/       홈, 로비, 게임 HUD, 혼자하기
       styles/           윷놀이 SCSS(원래 단일 CSS를 순서대로 나눈 것)
+    omok/
+      OmokApp.tsx       /omok 아래 라우트(홈, bot, 방)
+      room.ts           RoomGame 구현. 로비 자리(흑 / 백 / 관전)는 PlayerInfo.team 에 둔다
+      game/             순수 규칙 reducer(렌주 금수 포함) + 봇 (테스트 있음)
+      scene/            three.js 씬: 판, 돌, 돌통
+      components/       홈, 로비, 게임 HUD, 혼자하기 (CSS Modules)
   net/                  공통 통신: Firebase / 로컬 백엔드, useRoom, RoomGame
   components/           공통 UI(VolumeControl)
   games/*/assets/       게임 커버 사진. 출처는 같은 폴더 CREDITS.txt 와 registry 의 credit(메인화면 아래에 표시)

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { OmokApp } from './omok/OmokApp'
 import omokCover from './omok/assets/cover.webp'
 import yutCover from './yutnori/assets/cover.webp'
 import { YutnoriApp } from './yutnori/YutnoriApp'
@@ -52,7 +53,7 @@ export const GAMES: GameEntry[] = [
     slug: 'omok',
     title: '오목',
     tagline: '다섯 알을 먼저 잇기',
-    tags: ['2명'],
+    tags: ['2명', '관전', '봇'],
     color: '#2f8fd8',
     cover: omokCover,
     credit: {
@@ -62,6 +63,7 @@ export const GAMES: GameEntry[] = [
       license: 'CC BY-SA 4.0',
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
     },
+    App: OmokApp,
   },
 ]
 
