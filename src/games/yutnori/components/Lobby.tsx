@@ -1,6 +1,8 @@
 import { useState, type CSSProperties } from 'react'
 import { TEAM_COLORS, TEAM_NAMES } from '../game/rules'
 import { playerId } from '@/net'
+import { absoluteUrl } from '@/router'
+import { yutPath } from '../paths'
 import type { YutRoomApi } from '../room'
 import { Backdrop } from './Backdrop'
 
@@ -20,7 +22,7 @@ export function Lobby({
   if (!room) return null
   const s = room.settings
   const isHost = hostId === playerId
-  const link = `${location.origin}${location.pathname}#/${code}`
+  const link = absoluteUrl(yutPath(code))
 
   const copy = async () => {
     try {

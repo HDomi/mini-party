@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { backend, openRoom, saveName, savedName } from '@/net'
+import { Link } from '@/router'
 import { yutnori } from '../room'
 import { StickLogo } from './StickLogo'
 
@@ -53,6 +54,9 @@ export function Home({
   return (
     <main className="home">
       <div className="home-card">
+        <Link to="/" className="btn ghost small home-back">
+          ← 게임 목록
+        </Link>
         <StickLogo />
         <h1 className="title">
           슈퍼 <span>윷놀이</span>

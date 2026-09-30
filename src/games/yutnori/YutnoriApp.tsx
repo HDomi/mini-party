@@ -1,50 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { saveName, savedName } from '@/net'
+import { navigate } from '@/router'
 import { Home } from './components/Home'
 import { Room } from './components/Room'
 import { Solo } from './components/Solo'
-import { VolumeControl } from '@/components/VolumeControl'
-import { saveName, savedName } from '@/net'
+import { yutPath } from './paths'
 import './styles/index.scss'
 
-function codeFromHash(): string | null {
-  const m = location.hash.match(/^#\/([A-Z0-9]{4})$/i)
-  return m ? m[1].toUpperCase() : null
-}
-
-/** 1인 플레이 경로. 방 코드가 아니므로(코드는 정확히 네 글자) 방 코드와 겹칠 일이 없다. */
-const SOLO_HASH = '#/bot'
-const soloFromHash = () => location.hash === SOLO_HASH
-
-export default function App() {
-  return (
-    <>
-      <Screen />
-      <VolumeControl />
-    </>
-  )
-}
-
-function Screen() {
-  const [code, setCode] = useState(codeFromHash)
-  const [solo, setSolo] = useState(soloFromHash)
+export function YutnoriApp({ sub }: { sub: string }) {
+  const code = /^[A-Z0-9]{4}$/i.test(sub) ? sub.toUpperCase() : null
+  const solo = sub === 'bot'
   const [name, setName] = useState(savedName)
+  const toHome = () => navigate(yutPath())
 
-  useEffect(() => {
-    const onHash = () => {
-      setCode(codeFromHash())
-      setSolo(soloFromHash())
-    }
-    window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
-  }, [])
-
-  if (solo && name) return <Solo name={name} onLeave={() => (location.hash = '')} />
+  if (solo && name) return <Solo name={name} onLeave={toHome} />
   if (code && name) {
     return (
       <Room
         code={code}
         name={name}
-        onLeave={() => (location.hash = '')}
+        onLeave={toHome}
         onRename={(next) => {
           saveName(next)
           setName(next)
@@ -57,13 +32,11 @@ function Screen() {
       initialCode={code}
       onEnter={(nextName, nextCode) => {
         setName(nextName)
-        location.hash = `/${nextCode}`
-        setCode(nextCode)
+        navigate(yutPath(nextCode))
       }}
       onSolo={(nextName) => {
         setName(nextName)
-        location.hash = SOLO_HASH.slice(1)
-        setSolo(true)
+        navigate(yutPath('bot'))
       }}
     />
   )

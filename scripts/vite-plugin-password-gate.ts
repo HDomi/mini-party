@@ -80,7 +80,7 @@ function listFiles(dir: string): string[] {
 // 예전에는 이게 곧바로 "비밀번호 틀림"처럼 보였다.
 function loader(binUrl: string): string {
   return `(async()=>{
-const K='yutnori:pw';
+const K='party:pw';
 const bin=fetch(${JSON.stringify(binUrl)}).then(async r=>{if(!r.ok||/html/.test(r.headers.get('content-type')||''))throw 0;return new Uint8Array(await r.arrayBuffer())});
 bin.catch(()=>{});
 const ready=new Promise(r=>document.readyState==='loading'?document.addEventListener('DOMContentLoaded',r):r());
@@ -110,7 +110,7 @@ if(saved){if(await run(saved))return;try{sessionStorage.removeItem(K)}catch(e){}
 await ready;
 const gate=document.createElement('main');
 gate.id='pw-gate';gate.className='center-screen';gate.style.cssText='position:fixed;inset:0;z-index:10';
-gate.innerHTML='<form class="home-card"><h1 class="title small">슈퍼 <span>윷놀이</span></h1><p class="subtitle">비밀번호를 입력해 주세요</p><label class="field"><span>비밀번호</span><input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required></label><button class="btn primary big">들어가기</button><p class="err" hidden></p></form>';
+gate.innerHTML='<form class="home-card"><h1 class="title small">미니 <span>파티</span></h1><p class="subtitle">비밀번호를 입력해 주세요</p><label class="field"><span>비밀번호</span><input type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required></label><button class="btn primary big">들어가기</button><p class="err" hidden></p></form>';
 document.body.appendChild(gate);
 const form=gate.querySelector('form'),input=gate.querySelector('input'),btn=gate.querySelector('button'),err=gate.querySelector('.err');
 input.focus();

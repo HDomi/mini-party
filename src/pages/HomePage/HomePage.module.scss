@@ -1,0 +1,142 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  height: 100%;
+  overflow-y: auto;
+  padding: max(72px, env(safe-area-inset-top)) 16px 32px;
+  background:
+    radial-gradient(circle at 15% 85%, rgba(217, 68, 54, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(61, 139, 255, 0.1), transparent 40%);
+}
+
+.inner {
+  width: min(520px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -1px;
+
+  span {
+    color: var(--red);
+  }
+
+  @include mobile {
+    font-size: 46px;
+  }
+}
+
+.subtitle {
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+}
+
+.games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+
+  @include narrow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 20px 18px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 5px 0 var(--ink);
+  text-decoration: none;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+
+  strong {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 30px;
+  }
+
+  span {
+    color: var(--ink-soft);
+  }
+
+  small {
+    margin-top: auto;
+    padding-top: 8px;
+    font-size: 13px;
+    color: var(--red-deep);
+  }
+
+  &:active:not(.soon) {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 var(--ink);
+  }
+}
+
+.soon {
+  opacity: 0.55;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: default;
+
+  small {
+    color: var(--ink-soft);
+  }
+}
+
+.join {
+  margin-top: 28px;
+  padding: 18px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+
+  label {
+    display: block;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 8px 4px;
+  }
+}
+
+.joinRow {
+  display: flex;
+  gap: 10px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-family: var(--display);
+    font-size: 18px;
+    letter-spacing: 6px;
+    text-align: center;
+    text-transform: uppercase;
+    background: #fff;
+    outline: none;
+
+    &:focus {
+      box-shadow: 0 0 0 4px rgba(217, 68, 54, 0.2);
+    }
+  }
+}
