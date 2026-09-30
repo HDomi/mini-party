@@ -1,0 +1,37 @@
+.btn {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-family: var(--display);
+  font-size: 17px;
+  box-shadow: 0 3px 0 var(--ink);
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.btn.primary {
+  background: var(--red);
+  color: #fff;
+}
+.btn.big {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 20px;
+}
+.btn.ghost {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+  padding: 8px 10px;
+}
+.btn.small {
+  padding: 6px 12px;
+}

@@ -1,0 +1,8 @@
+firebase-key.json
+*-key.json
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.DS_Store

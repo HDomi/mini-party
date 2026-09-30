@@ -1,0 +1,54 @@
+@keyframes slide-in {
+  from {
+    transform: translateX(-12px);
+    opacity: 0;
+  }
+}
+@keyframes bob {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes toss {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  20% {
+    transform: translateY(-14px) rotate(-8deg);
+  }
+  40% {
+    transform: translateY(0) rotate(4deg);
+  }
+}
+@keyframes ping {
+  0% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 0 color-mix(in srgb, var(--turn) 55%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 22px transparent;
+  }
+}
+@keyframes stamp {
+  0% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}

@@ -1,0 +1,6 @@
+// 앱 전체에 한 번만 적용되는 전역 스타일. main.tsx 에서 가져온다.
+@use 'base/root';
+@use 'base/reset';
+@use 'components/button';
+@use 'components/feedback';
+@use 'base/animations';

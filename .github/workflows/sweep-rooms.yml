@@ -1,0 +1,37 @@
+name: Sweep idle rooms
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List idle rooms without deleting them
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sweep-rooms
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    # 여기엔 `environment:`가 없으므로 secret은 저장소 수준이어야 한다(environment를 쓰면 매시간 deployment가 기록된다).
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Node가 .ts를 직접 실행한다(type stripping). 스크립트에 npm 의존성은 없다.
+      - run: node scripts/sweep-rooms.ts
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL || vars.FIREBASE_DATABASE_URL }}
+          DB_KEY: ${{ secrets.DB_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}

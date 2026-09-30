@@ -1,0 +1,72 @@
+.tray-label {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  background: var(--paper);
+  border: 2px solid var(--team);
+  border-radius: 12px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s;
+}
+.tray-label b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--team);
+}
+.tray-label.active {
+  background: var(--team);
+  transform: scale(1.12);
+}
+.tray-label.active b,
+.tray-label.active .tray-score {
+  color: #fff;
+}
+.tray-score {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.tray-members {
+  display: flex;
+  gap: 4px;
+}
+.tray-members em {
+  font-style: normal;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.tray-label.active .tray-members em {
+  color: #fff;
+}
+.tray-members em.now {
+  opacity: 1;
+  text-decoration: underline;
+}
+.tray-members em.off {
+  text-decoration: line-through;
+}
+
+.stack-badge {
+  display: inline-block;
+  color: #fff;
+  font-family: var(--display);
+  font-size: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0 7px;
+}
+
+.dest-label {
+  display: inline-block;
+  color: #fff;
+  font-family: var(--display);
+  font-size: 15px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 1px 9px;
+  white-space: nowrap;
+  animation: bob 0.9s ease-in-out infinite;
+}

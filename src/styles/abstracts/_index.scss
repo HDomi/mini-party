@@ -1,0 +1,2 @@
+// 출력 CSS 가 없는 공용 변수·mixin. 각 파일에서 `@use '@/styles/abstracts' as *;` 로 가져온다.
+@forward 'breakpoints';
