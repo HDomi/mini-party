@@ -80,6 +80,8 @@ function listFiles(dir: string): string[] {
 // 예전에는 이게 곧바로 "비밀번호 틀림"처럼 보였다.
 function loader(binUrl: string): string {
   return `(async()=>{
+// crypto.subtle 은 HTTPS 에서만 있다. 카카오톡 등이 scheme 없는 링크를 http:// 로 열면 https 로 옮긴다.
+if(location.protocol==='http:'&&!/^(localhost|127\\.|\\[::1\\])/.test(location.hostname)){location.replace('https:'+location.href.slice(5));return}
 const K='party:pw';
 const bin=fetch(${JSON.stringify(binUrl)}).then(async r=>{if(!r.ok||/html/.test(r.headers.get('content-type')||''))throw 0;return new Uint8Array(await r.arrayBuffer())});
 bin.catch(()=>{});
