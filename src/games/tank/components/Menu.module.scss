@@ -410,3 +410,67 @@ $accent: #e8742a;
     gap: 14px;
   }
 }
+
+// ── 맵 고르기 ──
+.maps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.mapCard {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  align-content: start;
+  padding: 5px 5px 7px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  text-align: center;
+  min-width: 0;
+
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.1;
+  }
+  small {
+    font-size: 11px;
+    line-height: 1.25;
+    color: var(--ink-soft);
+  }
+  &.on {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(232, 116, 42, 0.4);
+  }
+  &:enabled:not(.on) {
+    cursor: pointer;
+  }
+  &:enabled:not(.on):hover {
+    border-color: $accent;
+  }
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.mapThumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 9px;
+  border: 1.5px solid rgba(58, 42, 34, 0.25);
+}
+
+@include narrow {
+  .maps {
+    gap: 6px;
+  }
+  .mapCard small {
+    display: none;
+  }
+}

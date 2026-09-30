@@ -1,9 +1,11 @@
 import type { RoomGame } from '@/net/game'
 import type { RoomApi } from '@/net/useRoom'
 import { applyAction, createGame, RuleError, SLOTS, type Action, type GameState } from './game/rules'
+import { MAPS, type MapKind } from './game/world'
 
 export interface TankSettings {
   teamMode: boolean
+  map: MapKind
 }
 
 /** 로비 자리. `PlayerInfo.team` 에 0~3 은 탱크 자리, 이 값은 관전석이다. */
@@ -13,7 +15,7 @@ export const tank: RoomGame<GameState, Action, TankSettings> = {
   id: 'tank',
   minPlayers: 2,
   maxPlayers: 8,
-  defaultSettings: { teamMode: false },
+  defaultSettings: { teamMode: false, map: 'hills' },
   // 빈 탱크 자리부터 채우고, 다 차 있으면 관전석에 앉힌다. 0, 1, 2, 3 순서라 팀전에서도 번갈아 찬다.
   pickTeam(players) {
     const taken = new Set(players.map((p) => p.team))
@@ -31,6 +33,8 @@ export const tank: RoomGame<GameState, Action, TankSettings> = {
     return createGame({
       players: players.filter((p) => p.team < SLOTS).map((p) => ({ id: p.id, name: p.name, slot: p.team })),
       teamMode: s.teamMode,
+      // 맵 설정이 생기기 전에 만든 방은 언덕으로 한다.
+      map: s.map && MAPS[s.map] ? s.map : 'hills',
       seed: Math.floor(Math.random() * 2 ** 32),
     })
   },

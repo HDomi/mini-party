@@ -13,6 +13,7 @@ export function Backdrop({ className }: { className?: string }) {
           { id: 'c', name: '', slot: 2 },
         ],
         teamMode: false,
+        map: 'hills',
         seed: 20260930,
       }),
     [],

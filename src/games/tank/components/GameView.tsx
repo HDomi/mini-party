@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { play } from '@/audio/sound'
 import { playerId } from '@/net'
 import { celebrateWin } from '../effects'
@@ -6,6 +6,7 @@ import {
   currentTank,
   MAX_HP,
   tankOf,
+  terrainOf,
   WEAPON_LIST,
   WEAPONS,
   winnerName,
@@ -13,7 +14,7 @@ import {
   type GameState,
   type Weapon,
 } from '../game/rules'
-import { clamp, FUEL, MAX_WIND, walk } from '../game/world'
+import { clamp, FUEL, MAX_WIND, walk, type Terrain } from '../game/world'
 import type { LocalAim } from '../scene/BattleScene'
 import { Battlefield } from '../scene/Battlefield'
 import styles from './GameView.module.scss'
@@ -52,9 +53,11 @@ const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hov
 interface Moving {
   dir: 0 | 1 | -1
   startX: number
+  startY: number
   startFuel: number
   held: number
   x: number
+  y: number
   turn: number
 }
 
@@ -85,6 +88,10 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
   const [inset, setInset] = useState(() => (api.inGame ? Math.min(200, window.innerHeight * 0.35) : 90))
 
   const moveRef = useRef<Moving | null>(null)
+  // 이동 미리보기가 매 프레임 지형을 쓰므로 문자열은 상태가 바뀔 때만 푼다.
+  const terrain = useMemo(() => terrainOf(game), [game.map, game.terrain])
+  const terrainRef = useRef<Terrain>(terrain)
+  terrainRef.current = terrain
   const chargeRef = useRef<number | null>(null)
   const gaugeRef = useRef<HTMLDivElement>(null)
   const dockRef = useRef<HTMLElement>(null)
@@ -126,7 +133,8 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
     const { game: g, ready: r, angle: a, facing: f } = live.current
     const t = tankOf(g, playerId)
     if (!r || !t) return null
-    return { id: playerId, x: moveRef.current?.x ?? t.x, facing: f, angle: a, guide: true }
+    const m = moveRef.current
+    return { id: playerId, x: m?.x ?? t.x, y: m?.y ?? t.y, facing: f, angle: a, guide: true }
   }, [])
 
   const run = async (fn: () => Promise<unknown>) => {
@@ -148,7 +156,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
     if (!r || b || !t || moveRef.current || chargeRef.current !== null) return
     setFacing(dir)
     live.current.facing = dir
-    moveRef.current = { dir, startX: t.x, startFuel: g.fuel, held: 0, x: t.x, turn: g.turn }
+    moveRef.current = { dir, startX: t.x, startY: t.y, startFuel: g.fuel, held: 0, x: t.x, y: t.y, turn: g.turn }
     setMoveDir(dir)
   }
 
@@ -177,8 +185,9 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
       if (!m || m.dir === 0) return
       m.held += ((now - last) / 1000) * MOVE_SPEED
       last = now
-      const r = walk(live.current.game.terrain, m.startX, m.startX + m.dir * m.held, m.startFuel)
+      const r = walk(terrainRef.current, m.startX, m.startY, m.startX + m.dir * m.held, m.startFuel)
       m.x = r.x
+      m.y = r.y
       setFuel(r.fuel)
       raf = requestAnimationFrame(tick)
     }

@@ -1,8 +1,8 @@
 // 봇: 각도·파워를 촘촘히 훑어 실제 비행을 시뮬레이션하고, 적에게 가장 큰 피해를 주는 조합을 고른다.
 // 난이도는 고른 조합에 섞는 오차로 정한다. 움직이지는 않는다.
 
-import { absoluteDeg, TRIPLE_SPREAD, WEAPON_LIST, WEAPONS, tankOf, type GameState, type Tank, type Weapon } from './rules'
-import { blastDamage, bodyCenter, clamp, fly, muzzle, SPEED_PER_POWER } from './world'
+import { absoluteDeg, TRIPLE_SPREAD, WEAPON_LIST, WEAPONS, tankOf, terrainOf, type GameState, type Tank, type Weapon } from './rules'
+import { blastDamage, bodyCenter, clamp, fly, muzzle, SPEED_PER_POWER, type Terrain } from './world'
 
 export type BotLevel = 'easy' | 'normal' | 'hard'
 
@@ -31,7 +31,7 @@ interface Score {
   miss: number
 }
 
-function evaluate(s: GameState, me: Tank, weapon: Weapon, angle: number, power: number, facing: 1 | -1): Score {
+function evaluate(s: GameState, terrain: Terrain, me: Tank, weapon: Weapon, angle: number, power: number, facing: 1 | -1): Score {
   const spec = WEAPONS[weapon]
   const deg = absoluteDeg(angle, facing)
   const degs = weapon === 'triple' ? [deg - TRIPLE_SPREAD, deg, deg + TRIPLE_SPREAD] : [deg]
@@ -41,8 +41,8 @@ function evaluate(s: GameState, me: Tank, weapon: Weapon, angle: number, power: 
   const dealt = new Map<string, number>()
   let miss = Infinity
   for (const d of degs) {
-    const f = fly({ h: s.terrain, from, deg: d, speed: power * SPEED_PER_POWER, wind: s.wind, tanks: alive, shooter: me.id })
-    if (f.end === 'out') continue
+    const f = fly({ t: terrain, from, deg: d, speed: power * SPEED_PER_POWER, wind: s.wind, tanks: alive, shooter: me.id })
+    if (f.end === 'out' || f.end === 'water') continue
     for (const e of enemies) {
       const c = bodyCenter(e)
       miss = Math.min(miss, Math.hypot(c.x - f.x, c.y - f.y))
@@ -69,12 +69,13 @@ const gauss = (rand: () => number) => (rand() + rand() + rand() - 1.5) * 2
 export function botPlan(s: GameState, id: string, level: BotLevel, rand: () => number = Math.random): Plan {
   const me = tankOf(s, id)
   if (!me) throw new Error(`no tank ${id}`)
+  const terrain = terrainOf(s)
 
   let best = { score: { value: -Infinity, miss: Infinity } as Score, angle: me.angle, power: me.power, facing: me.facing }
   for (const facing of [1, -1] as const) {
     for (let angle = 6; angle <= 86; angle += 2) {
       for (let power = 25; power <= 100; power += 1.5) {
-        const score = evaluate(s, me, 'shell', angle, power, facing)
+        const score = evaluate(s, terrain, me, 'shell', angle, power, facing)
         if (better(score, best.score)) best = { score, angle, power, facing }
       }
     }
@@ -86,7 +87,7 @@ export function botPlan(s: GameState, id: string, level: BotLevel, rand: () => n
     let top = best.score.value
     for (const w of WEAPON_LIST) {
       if (w === 'shell' || me.ammo[w] <= 0) continue
-      const v = evaluate(s, me, w, best.angle, best.power, best.facing).value
+      const v = evaluate(s, terrain, me, w, best.angle, best.power, best.facing).value
       if (v > top * 1.15 && v > top + 4) {
         top = v
         weapon = w

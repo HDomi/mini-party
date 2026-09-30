@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { botPlan, type BotLevel } from './bot'
 import { applyAction, createGame, currentTank, type GameState } from './rules'
-import { COLS, makeRng, surface } from './world'
+import { COL, encodeTerrain, makeRng, MAPS, type MapKind, type Terrain } from './world'
 
 function duel(): GameState {
   const s = createGame({
@@ -10,23 +10,24 @@ function duel(): GameState {
       { id: 'b', name: 'B', slot: 1 },
     ],
     teamMode: false,
+    map: 'hills',
     seed: 5,
   })
-  const terrain = Array.from({ length: COLS }, () => 200)
+  const terrain: Terrain = { kind: 'hills', cols: Array.from({ length: MAPS.hills.w / COL }, () => [0, 200]) }
   const xs: Record<string, number> = { a: 250, b: 850 }
   return {
     ...s,
-    terrain,
+    terrain: encodeTerrain(terrain),
     wind: 0,
-    tanks: s.tanks.map((t) => ({ ...t, x: xs[t.id], y: surface(terrain, xs[t.id]) })),
+    tanks: s.tanks.map((t) => ({ ...t, x: xs[t.id], y: 200 })),
   }
 }
 
 /** 끝날 때까지 봇끼리 쏜다. 봇이 규칙을 어기면 applyAction 이 던진다. */
-function match(levels: BotLevel[], teamMode: boolean, seed: number, maxTurns = 120): GameState {
+function match(levels: BotLevel[], teamMode: boolean, seed: number, map: MapKind = 'hills', maxTurns = 120): GameState {
   const rng = makeRng(seed)
   const players = levels.map((_, i) => ({ id: `p${i}`, name: `P${i}`, slot: i }))
-  let s = createGame({ players, teamMode, seed })
+  let s = createGame({ players, teamMode, map, seed })
   for (let n = 0; s.phase === 'play' && n < maxTurns; n++) {
     const me = currentTank(s)
     const plan = botPlan(s, me.id, levels[Number(me.id.slice(1))], rng.next)
@@ -55,4 +56,11 @@ describe('botPlan', () => {
     const s = match(['hard', 'hard', 'normal', 'normal'], true, 23)
     expect(s.phase).toBe('over')
   }, 30_000)
+
+  it('finishes games on the other maps', () => {
+    for (const map of ['box', 'islands'] as const) {
+      const s = match(['hard', 'normal', 'hard'], false, 31, map)
+      expect(s.phase).toBe('over')
+    }
+  }, 60_000)
 })

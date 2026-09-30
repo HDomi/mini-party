@@ -1,22 +1,21 @@
 import { play } from '@/audio/sound'
-import { absoluteDeg, type GameState, type Shot } from '../game/rules'
-import { applyCrater, BARREL, clamp, DT, SAMPLE, surface, TURRET_Y, W, WATER } from '../game/world'
+import { absoluteDeg, FELL_Y, shotFlights, terrainOf, type GameState, type Shot } from '../game/rules'
+import { applyCrater, BARREL, clamp, dir, DT, groundBelow, MAPS, TURRET_Y, type Flight, type MapSpec, type Terrain } from '../game/world'
+import { buildTerrainArt, drawGround, drawSea, drawSky, PALETTES, type TerrainArt } from './terrainArt'
 
 // 전장 캔버스. React 밖에서 매 프레임 그린다.
 //
 // 화면에 보이는 지형·탱크는 `target`(서버가 확정한 상태)을 그대로 쓰지 않는다. 발사가 오면
-// 이전 화면에서 출발해 궤적과 폭발을 재생하고, 끝나면 `target` 으로 맞춘다.
+// 발사 직전 상태에서 궤적을 다시 계산해 재생하고 폭발을 차례로 보여 준 뒤 `target` 으로 맞춘다.
 
 /** 좁은 화면에서도 가로로 이만큼은 보인다. 나머지는 카메라가 따라간다. */
 const MIN_VIEW_W = 720
 /** 기본 배율 대비 확대 한도. 축소는 맵 전체 폭이 보일 때까지만 된다. */
 const MAX_ZOOM = 3
-/** 카메라가 올라갈 수 있는 월드 높이. 높이 뜬 포탄도 따라간다. */
-const CEIL = 1000
+/** 카메라가 맵 높이보다 이만큼 더 올라갈 수 있다. 높이 뜬 포탄도 따라간다. */
+const CEIL_EXTRA = 300
 /** 위쪽 HUD 에 양보하는 높이(px). 낮은 화면에서는 화면 높이의 10% 까지만. */
 const TOP_RESERVE = 60
-/** 기본 배율에서 세로로 담는 월드 높이. 가장 높은 땅 위의 탱크와 이름표까지. 더 높이 뜬 포탄은 카메라가 따라간다. */
-const FIT_H = 560
 /** 조작판이 화면을 이 비율 넘게 가려도 전장은 이만큼만 올린다. */
 const MAX_INSET = 0.45
 /** 시뮬레이션 1초를 화면에서 몇 배 빠르게 재생할지. */
@@ -26,6 +25,8 @@ const ROLL_SPEED = 110
 const FALL_ACCEL = 900
 /** 마지막 폭발 뒤 결과를 확정하기까지 기다리는 시간. */
 const SETTLE_MS = 650
+/** 포탄 꼬리 길이(스텝). */
+const TRAIL = 30
 
 const INK = '#3a2a22'
 const DEAD = '#7a716a'
@@ -34,6 +35,7 @@ export interface LocalAim {
   /** 내 탱크를 서버 상태 대신 이 값으로 그린다. 이동·조준 미리보기. */
   id: string
   x: number
+  y: number
   facing: 1 | -1
   angle: number
   guide: boolean
@@ -56,11 +58,16 @@ interface Shown {
 
 type Fx =
   | { kind: 'blast'; x: number; y: number; r: number; t0: number }
+  | { kind: 'splash'; x: number; y: number; t0: number }
   | { kind: 'text'; x: number; y: number; text: string; color: string; t0: number }
   | { kind: 'bit'; x: number; y: number; vx: number; vy: number; t0: number; color: string }
 
 interface Playing {
   shot: Shot
+  /** 발사 직전 상태에서 다시 계산한 비행. 직전 상태를 못 받았으면 비어 있고 폭발만 보여 준다. */
+  flights: Flight[]
+  /** 물에 떨어진 것을 이미 보여 준 포탄. */
+  splashed: boolean[]
   t0: number
   /** 아직 안 터진 첫 폭발. */
   next: number
@@ -84,11 +91,13 @@ export class BattleScene {
   private ctx: CanvasRenderingContext2D
   private target: GameState | null = null
   private pending: GameState | null = null
-  private terrain: number[] = []
+  private spec: MapSpec = MAPS.hills
+  private terrain: Terrain = { kind: 'hills', cols: [] }
+  private art: TerrainArt | null = null
   private tanks = new Map<string, Shown>()
   private playing: Playing | null = null
   private fx: Fx[] = []
-  private camX = W / 2
+  private camX = MAPS.hills.w / 2
   private camY = 0
   /** 드래그·줌으로 직접 옮긴 카메라 중심. 다음 발사나 차례가 오면 다시 따라간다. */
   private manual: { x: number; y: number } | null = null
@@ -191,14 +200,15 @@ export class BattleScene {
 
   /** 맵 전체 폭이 보이는 배율. 넓은 화면은 기본 배율에서 이미 다 보인다. */
   private minZoom(fit: number) {
-    return Math.min(1, this.w / (W * fit))
+    return Math.min(1, this.w / (this.spec.w * fit))
   }
 
   private clampCam(x: number, y: number, v: ReturnType<BattleScene['view']>) {
+    const W = this.spec.w
     const half = v.width / 2
     return {
       x: v.width >= W ? W / 2 : clamp(x, half, W - half),
-      y: clamp(y, 0, Math.max(0, CEIL - v.visH)),
+      y: clamp(y, 0, Math.max(0, this.spec.h + CEIL_EXTRA - v.visH)),
     }
   }
 
@@ -209,16 +219,25 @@ export class BattleScene {
     }
     const prev = this.target
     this.target = g
-    if (!prev || prev.round !== g.round) return this.snap(false)
+    if (!prev || prev.round !== g.round || prev.map !== g.map) return this.snap(false)
     if (prev.current !== g.current) this.manual = null
-    if (g.lastShot && g.lastShot.seq === g.seq && prev.seq < g.seq) return this.startShot(g.lastShot)
+    if (g.lastShot && g.lastShot.seq === g.seq && prev.seq < g.seq) return this.startShot(g.lastShot, prev)
     this.snap(true)
+  }
+
+  private setTerrain(t: Terrain) {
+    this.terrain = t
+    this.art = buildTerrainArt(t)
   }
 
   /** 화면을 `target` 에 맞춘다. `roll` 이면 움직인 탱크는 굴러서 간다. */
   private snap(roll: boolean) {
     const g = this.target!
-    this.terrain = g.terrain.slice()
+    if (this.spec !== MAPS[g.map]) {
+      this.spec = MAPS[g.map]
+      this.camX = this.spec.w / 2
+    }
+    this.setTerrain(terrainOf(g))
     const next = new Map<string, Shown>()
     for (const t of g.tanks) {
       const d = roll ? this.tanks.get(t.id) : undefined
@@ -228,7 +247,7 @@ export class BattleScene {
         color: t.color,
         x: d ? d.x : t.x,
         tx: t.x,
-        y: d ? d.y : t.y,
+        y: d && t.y > FELL_Y ? d.y : t.y,
         vy: 0,
         hp: t.hp,
         alive: t.alive,
@@ -239,16 +258,16 @@ export class BattleScene {
     this.tanks = next
   }
 
-  private startShot(shot: Shot) {
-    const g = this.target!
+  private startShot(shot: Shot, prev: GameState) {
     const by = this.tanks.get(shot.by)
-    const t = g.tanks.find((x) => x.id === shot.by)
-    if (by && t) {
-      by.facing = t.facing
-      by.angle = t.angle
+    if (by) {
+      by.facing = shot.facing
+      by.angle = shot.angle
     }
+    // 바로 직전 상태를 봤을 때만 궤적을 똑같이 다시 계산할 수 있다. 중간 상태를 건너뛰었으면 폭발만 보여 준다.
+    const flights = prev.seq === shot.seq - 1 ? shotFlights(prev, terrainOf(prev), shot) : []
     this.manual = null
-    this.playing = { shot, t0: performance.now(), next: 0, doneAt: null }
+    this.playing = { shot, flights, splashed: flights.map(() => false), t0: performance.now(), next: 0, doneAt: null }
     if (this.sound) play('throw')
     this.onBusy?.(true)
   }
@@ -269,8 +288,9 @@ export class BattleScene {
   }
 
   private boom(b: Shot['booms'][number], now: number) {
-    this.terrain = applyCrater(this.terrain, b.x, b.y, b.r)
+    this.setTerrain(applyCrater(this.terrain, b.x, b.y, b.r))
     this.fx.push({ kind: 'blast', x: b.x, y: b.y, r: b.r, t0: now })
+    const pal = PALETTES[this.target?.map ?? 'hills']
     for (let i = 0; i < 14; i++) {
       const a = Math.random() * Math.PI
       const v = 120 + Math.random() * 220
@@ -281,7 +301,7 @@ export class BattleScene {
         vx: Math.cos(a) * v,
         vy: Math.sin(a) * v,
         t0: now,
-        color: i % 3 ? '#9a6a3e' : '#6cbf4a',
+        color: i % 3 ? pal.soilBottom : pal.top,
       })
     }
     for (const hit of b.hits) {
@@ -300,25 +320,24 @@ export class BattleScene {
     const inset = Math.min(this.inset, this.h * MAX_INSET)
     const top = Math.min(TOP_RESERVE, this.h * 0.1)
     const base = this.h - inset
-    const fit = Math.max(0.05, Math.min((base - top) / FIT_H, this.w / MIN_VIEW_W))
+    const fit = Math.max(0.05, Math.min((base - top) / this.spec.fitH, this.w / MIN_VIEW_W))
     const s = fit * this.zoom
     return { fit, s, width: this.w / s, base, visH: (base - top) / s }
   }
 
-  /** 포탄 `k` 의 위치. 끝났으면 null. */
-  private shellAt(f: Shot['flights'][number], step: number): { x: number; y: number; k: number } | null {
+  /** 재생 시각의 시뮬레이션 스텝. */
+  private stepAt(p: Playing, now: number) {
+    return (((now - p.t0) / 1000) * PLAY_SPEED) / DT
+  }
+
+  /** 스텝 `step` 에서 포탄 위치. 끝났으면 null. */
+  private shellAt(f: Flight, step: number): { x: number; y: number; k: number } | null {
     if (step >= f.steps) return null
-    const last = f.path.length / 2 - 1
-    const k = Math.min(last, Math.floor(step / SAMPLE))
-    const n = Math.min(last, k + 1)
-    const t0 = k * SAMPLE
-    const t1 = n === last ? f.steps : n * SAMPLE
-    const u = t1 > t0 ? (step - t0) / (t1 - t0) : 0
-    return {
-      x: f.path[k * 2] + (f.path[n * 2] - f.path[k * 2]) * u,
-      y: f.path[k * 2 + 1] + (f.path[n * 2 + 1] - f.path[k * 2 + 1]) * u,
-      k,
-    }
+    const k = Math.floor(step)
+    const u = step - k
+    const x0 = f.path[k * 2]
+    const y0 = f.path[k * 2 + 1]
+    return { x: x0 + (f.path[k * 2 + 2] - x0) * u, y: y0 + (f.path[k * 2 + 3] - y0) * u, k }
   }
 
   frame(now: number) {
@@ -327,8 +346,9 @@ export class BattleScene {
     // 카메라 값이 한 번이라도 NaN 이 되면 setTransform 이 무시되어 전장이 화면 좌표로(위아래 뒤집혀) 그려진다.
     // 원인과 상관없이 기본 보기로 되돌린다.
     if (![this.camX, this.camY, this.zoom, this.zoomGoal, this.inset].every(Number.isFinite)) {
-      if (import.meta.env.DEV) console.warn('battle camera reset', { camX: this.camX, camY: this.camY, zoom: this.zoom, inset: this.inset })
-      this.camX = W / 2
+      if (import.meta.env.DEV)
+        console.warn('battle camera reset', JSON.stringify({ camX: this.camX, camY: this.camY, zoom: this.zoom, zoomGoal: this.zoomGoal, inset: this.inset, insetGoal: this.insetGoal, w: this.w, h: this.h, map: this.target?.map }))
+      this.camX = this.spec.w / 2
       this.camY = 0
       this.zoom = this.zoomGoal = 1
       this.manual = null
@@ -341,10 +361,16 @@ export class BattleScene {
     let focus: { x: number; y: number } | null = null
     const p = this.playing
     if (p) {
-      const step = (((now - p.t0) / 1000) * PLAY_SPEED) / DT
+      const step = this.stepAt(p, now)
       const booms = p.shot.booms
       while (p.next < booms.length && booms[p.next].steps <= step) this.boom(booms[p.next++], now)
-      for (const f of p.shot.flights) {
+      p.flights.forEach((f, i) => {
+        if (f.end !== 'water' || p.splashed[i] || step < f.steps) return
+        p.splashed[i] = true
+        this.fx.push({ kind: 'splash', x: f.x, y: this.spec.sea, t0: now })
+        if (this.sound) play('step', 0.8)
+      })
+      for (const f of p.flights) {
         const at = this.shellAt(f, step)
         if (at) {
           focus = at
@@ -352,31 +378,39 @@ export class BattleScene {
         }
       }
       if (focus === null && booms.length) focus = booms[booms.length - 1]
-      const flying = p.shot.flights.some((f) => f.steps > step)
-      if (!flying && p.next >= booms.length) {
+      const lastStep = Math.max(0, ...p.flights.map((f) => f.steps), ...booms.map((b) => b.steps))
+      if (step >= lastStep && p.next >= booms.length) {
         p.doneAt ??= now
         const falling = [...this.tanks.values()].some((d) => d.vy !== 0)
         if (!falling && now - p.doneAt > SETTLE_MS) this.finishShot()
       }
     }
 
-    // 탱크: 굴러가고, 발밑이 꺼지면 떨어진다.
+    // 탱크: 굴러가고, 발밑이 꺼지면 떨어진다. 흙은 무너지지 않는다.
     for (const d of this.tanks.values()) {
       if (this.local && this.local.id === d.id) {
         d.x = d.tx = this.local.x
+        d.y = this.local.y
+        d.vy = 0
         d.facing = this.local.facing
         d.angle = this.local.angle
-      } else if (d.x !== d.tx) {
+        continue
+      }
+      let rolling = false
+      if (d.x !== d.tx) {
         const stepX = ROLL_SPEED * dt
         d.x = Math.abs(d.tx - d.x) <= stepX ? d.tx : d.x + Math.sign(d.tx - d.x) * stepX
+        rolling = true
       }
-      const ground = surface(this.terrain, d.x)
-      if (d.y > ground + 0.5 && (d.vy !== 0 || this.playing)) {
+      if (d.y <= FELL_Y) continue
+      const ground = groundBelow(this.terrain, d.x, d.y, rolling ? 8 : 0.5)
+      const floor = ground === -Infinity ? FELL_Y : ground
+      if (d.y > floor + 0.5 && (d.vy !== 0 || this.playing || ground === -Infinity)) {
         d.vy += FALL_ACCEL * dt
-        d.y = Math.max(ground, d.y - d.vy * dt)
-        if (d.y === ground) d.vy = 0
+        d.y = Math.max(floor, d.y - d.vy * dt)
+        if (d.y === floor) d.vy = 0
       } else {
-        d.y = ground
+        d.y = floor
         d.vy = 0
       }
     }
@@ -400,7 +434,7 @@ export class BattleScene {
       if (focus === null) {
         const g = this.target
         const cur = g && g.phase === 'play' ? this.tanks.get(g.tanks[g.current].id) : null
-        focus = (this.track && this.tanks.get(this.track)) || cur || { x: W / 2, y: 0 }
+        focus = (this.track && this.tanks.get(this.track)) || cur || { x: this.spec.w / 2, y: 0 }
       }
       // 따라가는 대상이 화면 위쪽 여백 안으로 들어올 때만 카메라를 올린다. 평소에는 바닥을 기준선에 둔다.
       const margin = Math.min(120, view.visH * 0.35)
@@ -408,16 +442,17 @@ export class BattleScene {
       const k = Math.min(1, dt * (p ? 5 : 3))
       this.camX += (goal.x - this.camX) * k
       this.camY += (goal.y - this.camY) * k
-      if (view.width >= W) this.camX = W / 2
+      if (view.width >= this.spec.w) this.camX = this.spec.w / 2
     }
 
     this.draw(now, view, p)
-    this.fx = this.fx.filter((f) => now - f.t0 < (f.kind === 'text' ? 1300 : f.kind === 'blast' ? 600 : 1000))
+    this.fx = this.fx.filter((f) => now - f.t0 < (f.kind === 'text' ? 1300 : f.kind === 'blast' || f.kind === 'splash' ? 600 : 1000))
   }
 
   private draw(now: number, view: ReturnType<BattleScene['view']>, p: Playing | null) {
     const { ctx, dpr } = this
     const { s } = view
+    const kind = this.target?.map ?? 'hills'
     // 카메라가 올라가면 월드 0 이 조작판 위 기준선보다 아래로 내려간다.
     const base = view.base + this.camY * s
     let left = this.camX - view.width / 2
@@ -429,15 +464,10 @@ export class BattleScene {
 
     // 하늘
     screen()
-    const sky = ctx.createLinearGradient(0, 0, 0, this.h)
-    sky.addColorStop(0, '#7cc6f2')
-    sky.addColorStop(0.7, '#cdeefc')
-    sky.addColorStop(1, '#fdf1d8')
-    ctx.fillStyle = sky
-    ctx.fillRect(0, 0, this.w, this.h)
+    drawSky(ctx, kind, this.w, this.h)
     ctx.fillStyle = 'rgba(255, 240, 180, 0.9)'
     ctx.beginPath()
-    ctx.arc(this.w * 0.82, Math.max(60, toY(620)), 34, 0, Math.PI * 2)
+    ctx.arc(this.w * 0.82, Math.max(60, toY(this.spec.h - 80)), 34, 0, Math.PI * 2)
     ctx.fill()
 
     // 구름은 바람 쪽으로 흘러간다.
@@ -446,7 +476,7 @@ export class BattleScene {
       const span = view.width + 400
       const wx = ((((c.x + this.cloudShift - left * 0.5) % span) + span) % span) - 200
       const cx = wx * s
-      const cy = toY(c.y)
+      const cy = toY(c.y + this.spec.h - 700)
       const r = 26 * c.s * Math.max(0.7, s)
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, Math.PI * 2)
@@ -456,82 +486,53 @@ export class BattleScene {
     }
 
     // 먼 산(시차)
-    ctx.fillStyle = 'rgba(120, 160, 150, 0.45)'
+    ctx.fillStyle = PALETTES[kind].ridge
     ctx.beginPath()
     ctx.moveTo(0, this.h)
     for (let i = 0; i < RIDGE.length; i++) {
-      const wx = (i / (RIDGE.length - 1)) * (W + 400) - 200
+      const wx = (i / (RIDGE.length - 1)) * (this.spec.w + 400) - 200
       ctx.lineTo((wx - left * 0.35) * s, toY(RIDGE[i]))
     }
     ctx.lineTo(this.w, this.h)
     ctx.fill()
 
     world()
-    // 물, 땅, 그 아래 암반
-    ctx.fillStyle = '#4aa3d8'
-    ctx.fillRect(left - 10, 0, view.width + 20, WATER)
-    const h = this.terrain
-    if (h.length) {
-      const dirt = ctx.createLinearGradient(0, 480, 0, 0)
-      dirt.addColorStop(0, '#c98f55')
-      dirt.addColorStop(1, '#8a5a33')
-      ctx.fillStyle = dirt
-      ctx.beginPath()
-      ctx.moveTo(0, 0)
-      const colW = W / h.length
-      for (let i = 0; i < h.length; i++) ctx.lineTo((i + 0.5) * colW, h[i])
-      ctx.lineTo(W, h[h.length - 1])
-      ctx.lineTo(W, 0)
-      ctx.closePath()
-      ctx.fill()
-      ctx.strokeStyle = '#6cbf4a'
-      ctx.lineWidth = 6
-      ctx.lineJoin = 'round'
-      ctx.beginPath()
-      ctx.moveTo(0, h[0] - 2)
-      for (let i = 0; i < h.length; i++) ctx.lineTo((i + 0.5) * colW, h[i] - 2)
-      ctx.lineTo(W, h[h.length - 1] - 2)
-      ctx.stroke()
-    }
-    ctx.fillStyle = '#5a3a22'
-    ctx.fillRect(left - 10, -2000, view.width + 20, 2000)
+    if (this.art) drawGround(ctx, kind, this.art, left, view.width)
 
     // 탱크
     const g = this.target
     const current = g && g.phase === 'play' && !p ? g.tanks[g.current].id : null
-    for (const d of this.tanks.values()) this.drawTank(d)
+    for (const d of this.tanks.values()) if (d.y > FELL_Y + 20) this.drawTank(d)
 
     // 조준선
     const aim = this.local
     const mine = aim && !p ? this.tanks.get(aim.id) : null
     if (aim?.guide && mine) {
-      const deg = absoluteDeg(aim.angle, aim.facing)
-      const a = (deg * Math.PI) / 180
+      const a = dir(absoluteDeg(aim.angle, aim.facing))
       const px = mine.x
       const py = mine.y + TURRET_Y
       ctx.strokeStyle = 'rgba(58, 42, 34, 0.55)'
       ctx.lineWidth = 2.5
       ctx.setLineDash([6, 7])
       ctx.beginPath()
-      ctx.moveTo(px + Math.cos(a) * (BARREL + 6), py + Math.sin(a) * (BARREL + 6))
-      ctx.lineTo(px + Math.cos(a) * (BARREL + 80), py + Math.sin(a) * (BARREL + 80))
+      ctx.moveTo(px + a.x * (BARREL + 6), py + a.y * (BARREL + 6))
+      ctx.lineTo(px + a.x * (BARREL + 80), py + a.y * (BARREL + 80))
       ctx.stroke()
       ctx.setLineDash([])
     }
 
     // 포탄과 꼬리
     if (p) {
-      const step = (((now - p.t0) / 1000) * PLAY_SPEED) / DT
-      for (const f of p.shot.flights) {
+      const step = this.stepAt(p, now)
+      for (const f of p.flights) {
         const at = this.shellAt(f, step)
         if (!at) continue
         ctx.strokeStyle = 'rgba(58, 42, 34, 0.3)'
         ctx.lineWidth = 3
         ctx.beginPath()
-        for (let k = Math.max(0, at.k - 10); k <= at.k; k++) {
-          if (k === Math.max(0, at.k - 10)) ctx.moveTo(f.path[k * 2], f.path[k * 2 + 1])
-          else ctx.lineTo(f.path[k * 2], f.path[k * 2 + 1])
-        }
+        const from = Math.max(0, at.k - TRAIL)
+        ctx.moveTo(f.path[from * 2], f.path[from * 2 + 1])
+        for (let k = from + 1; k <= at.k; k++) ctx.lineTo(f.path[k * 2], f.path[k * 2 + 1])
         ctx.lineTo(at.x, at.y)
         ctx.stroke()
         ctx.fillStyle = INK
@@ -557,6 +558,14 @@ export class BattleScene {
           ctx.arc(f.x, f.y, r * 0.55, 0, Math.PI * 2)
           ctx.fill()
         }
+      } else if (f.kind === 'splash') {
+        const u = Math.min(1, t / 0.6)
+        ctx.fillStyle = `rgba(230, 245, 255, ${0.9 * (1 - u)})`
+        for (const dx of [-8, 0, 8]) {
+          ctx.beginPath()
+          ctx.ellipse(f.x + dx * (1 + u), f.y + 6 + 30 * u * (dx === 0 ? 1.4 : 1), 4, 9 * (1 - u) + 3, 0, 0, Math.PI * 2)
+          ctx.fill()
+        }
       } else if (f.kind === 'bit') {
         const x = f.x + f.vx * t
         const y = f.y + f.vy * t - 0.5 * 700 * t * t
@@ -565,10 +574,12 @@ export class BattleScene {
       }
     }
 
+    drawSea(ctx, kind, left, view.width, now)
+
     // 이름표·체력·글자는 화면 좌표로 그린다.
     screen()
     if (this.labels) {
-      for (const d of this.tanks.values()) this.drawLabel(d, toX(d.x), toY(d.y + 38), d.id === current, now)
+      for (const d of this.tanks.values()) if (d.y > FELL_Y + 20) this.drawLabel(d, toX(d.x), toY(d.y + 38), d.id === current, now)
     }
     ctx.textAlign = 'center'
     ctx.lineJoin = 'round'
@@ -591,11 +602,12 @@ export class BattleScene {
     const { ctx } = this
     const color = d.alive ? d.color : DEAD
     // 가파른 비탈에서 차체가 포탑과 어긋나 보이지 않도록 기울기를 제한한다.
-    const tilt = clamp(Math.atan2(surface(this.terrain, d.x + 8) - surface(this.terrain, d.x - 8), 16), -0.4, 0.4)
+    const gl = groundBelow(this.terrain, d.x - 8, d.y, 8)
+    const gr = groundBelow(this.terrain, d.x + 8, d.y, 8)
+    const tilt = gl === -Infinity || gr === -Infinity ? 0 : clamp(Math.atan2(gr - gl, 16), -0.4, 0.4)
 
     // 포신은 차체 기울기와 상관없이 조준한 방향을 가리킨다(발사 계산과 같다).
-    const deg = d.alive ? absoluteDeg(d.angle, d.facing) : d.facing > 0 ? -15 : 195
-    const a = (deg * Math.PI) / 180
+    const a = dir(d.alive ? absoluteDeg(d.angle, d.facing) : d.facing > 0 ? -15 : 195)
     const px = d.x
     const py = d.y + TURRET_Y
     ctx.lineCap = 'round'
@@ -603,7 +615,7 @@ export class BattleScene {
     ctx.lineWidth = 6
     ctx.beginPath()
     ctx.moveTo(px, py)
-    ctx.lineTo(px + Math.cos(a) * BARREL, py + Math.sin(a) * BARREL)
+    ctx.lineTo(px + a.x * BARREL, py + a.y * BARREL)
     ctx.stroke()
     ctx.strokeStyle = color
     ctx.lineWidth = 2.6

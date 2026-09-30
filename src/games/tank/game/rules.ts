@@ -1,24 +1,29 @@
 // 포격전 규칙. 순수 함수만 있다: 방(transaction)과 봇이 같은 reducer 를 쓴다.
 //
 // 발사 한 번은 액션 하나다. `applyAction` 이 포탄 비행을 끝까지 계산해 지형·체력·탈락을 확정하고,
-// 화면이 재생할 궤적과 폭발을 `lastShot` 에 남긴다. 난수는 `rng` 에 저장한 상태에서만 뽑는다.
+// 폭발과 피해를 `lastShot` 에 남긴다. 궤적은 저장하지 않는다: 화면은 발사 직전 상태에서 `shotFlights` 로
+// 똑같이 다시 계산한다(비행 계산은 기기마다 같은 값이 나온다, world.ts 참고). 난수는 `rng` 에 저장한 상태에서만 뽑는다.
 
+import { generateMap } from './maps'
 import {
   applyCrater,
   blastDamage,
   clamp,
+  decodeTerrain,
+  drowned,
+  encodeTerrain,
   fallDamage,
   fly,
   FUEL,
+  groundBelow,
   makeRng,
-  makeTerrain,
+  MAPS,
   MAX_WIND,
   muzzle,
   SPEED_PER_POWER,
-  surface,
   walk,
-  W,
-  WATER,
+  type Flight,
+  type MapKind,
   type Rng,
   type Terrain,
 } from './world'
@@ -75,8 +80,12 @@ export interface Tank {
   power: number
   ammo: Record<LimitedWeapon, number>
   alive: boolean
-  out: 'hp' | 'fall' | 'resign' | null
+  /** `fall` 은 맵 아래로 떨어짐, `sea` 는 바다에 빠짐. */
+  out: 'hp' | 'fall' | 'sea' | 'resign' | null
 }
+
+/** 맵 아래로 떨어진 탱크의 y. JSON 에 -Infinity 를 넣을 수 없어서 이 값으로 둔다. */
+export const FELL_Y = -100
 
 export interface Boom {
   x: number
@@ -88,11 +97,13 @@ export interface Boom {
 }
 
 export interface Shot {
-  /** 이 발사로 만들어진 상태의 `seq`. 화면은 이 값이 같을 때만 재생한다. */
+  /** 이 발사로 만들어진 상태의 `seq`. 발사 직전 상태는 `seq - 1` 이다. 화면은 이 값이 같을 때만 재생한다. */
   seq: number
   by: string
   weapon: Weapon
-  flights: { path: number[]; steps: number }[]
+  angle: number
+  power: number
+  facing: 1 | -1
   /** 터진 순서대로. */
   booms: Boom[]
   falls: { id: string; dmg: number }[]
@@ -101,9 +112,11 @@ export interface Shot {
 
 export interface GameState {
   teamMode: boolean
+  map: MapKind
   /** 차례 순서대로. 탈락한 탱크도 잔해로 남는다. */
   tanks: Tank[]
-  terrain: Terrain
+  /** `encodeTerrain` 문자열. `terrainOf` 로 푼다. */
+  terrain: string
   /** -MAX_WIND ~ MAX_WIND. + 면 오른쪽으로 분다. */
   wind: number
   rng: number
@@ -148,7 +161,7 @@ export interface Entrant {
 
 export const teamOfSlot = (slot: number, teamMode: boolean) => (teamMode ? slot % 2 : slot)
 
-export function createGame(opts: { players: Entrant[]; teamMode: boolean; seed: number }): GameState {
+export function createGame(opts: { players: Entrant[]; teamMode: boolean; map: MapKind; seed: number }): GameState {
   const rng = makeRng(opts.seed)
   const sorted = [...opts.players].sort((a, b) => a.slot - b.slot)
   const base = sorted.map((p) => ({
@@ -172,30 +185,33 @@ export function createGame(opts: { players: Entrant[]; teamMode: boolean; seed: 
     const k = Math.floor(rng.next() * base.length)
     order = [...base.slice(k), ...base.slice(0, k)]
   }
-  return newRound(order, opts.teamMode, rng, 0)
+  return newRound(order, opts.teamMode, MAPS[opts.map] ? opts.map : 'hills', rng, 0)
 }
 
-function newRound(order: Pick<Tank, 'id' | 'name' | 'team' | 'color'>[], teamMode: boolean, rng: Rng, round: number): GameState {
-  const n = order.length
-  const margin = 80
-  const step = n > 1 ? (W - margin * 2) / (n - 1) : 0
-  const spots = order.map((_, k) => Math.round(margin + k * step + (rng.next() - 0.5) * 40))
-  // 팀전은 차례 순서(번갈아)대로 서서 같은 팀이 붙지 않는다. 개인전은 섞는다.
+function newRound(
+  order: Pick<Tank, 'id' | 'name' | 'team' | 'color'>[],
+  teamMode: boolean,
+  map: MapKind,
+  rng: Rng,
+  round: number,
+): GameState {
+  const { terrain, spots } = generateMap(map, rng, order.length)
+  // 자리는 x 순이다. 팀전은 차례 순서(번갈아)대로 서서 같은 팀이 붙지 않는다. 개인전은 섞는다.
   if (!teamMode) {
     for (let i = spots.length - 1; i > 0; i--) {
       const j = Math.floor(rng.next() * (i + 1))
       ;[spots[i], spots[j]] = [spots[j], spots[i]]
     }
   }
-  const terrain = makeTerrain(rng.next, spots)
+  const mid = MAPS[map].w / 2
   const tanks: Tank[] = order.map((t, k) => {
-    const x = spots[k]
+    const { x, y } = spots[k]
     return {
       ...t,
       x,
-      y: surface(terrain, x),
+      y,
       hp: MAX_HP,
-      facing: x < W / 2 ? 1 : -1,
+      facing: x < mid ? 1 : -1,
       angle: 45,
       power: 60,
       ammo: { heavy: WEAPONS.heavy.ammo!, triple: WEAPONS.triple.ammo!, drill: WEAPONS.drill.ammo! },
@@ -206,8 +222,9 @@ function newRound(order: Pick<Tank, 'id' | 'name' | 'team' | 'color'>[], teamMod
   const wind = nextWind(rng)
   return {
     teamMode,
+    map,
     tanks,
-    terrain,
+    terrain: encodeTerrain(terrain),
     wind,
     rng: rng.seed,
     turn: 1,
@@ -228,6 +245,7 @@ function nextWind(rng: Rng): number {
 }
 
 export const currentTank = (s: GameState): Tank => s.tanks[s.current]
+export const terrainOf = (s: Pick<GameState, 'map' | 'terrain'>): Terrain => decodeTerrain(s.map, s.terrain)
 export const tankOf = (s: GameState, id: string): Tank | undefined => s.tanks.find((t) => t.id === id)
 export const aliveTeams = (s: Pick<GameState, 'tanks'>): Set<number> => new Set(s.tanks.filter((t) => t.alive).map((t) => t.team))
 
@@ -245,7 +263,7 @@ export function applyAction(s: GameState, a: Action): GameState {
   if (a.type === 'rematch') {
     if (s.phase !== 'over') throw new RuleError('아직 게임 중이에요')
     const order = [...s.tanks.slice(1), s.tanks[0]].map(({ id, name, team, color }) => ({ id, name, team, color }))
-    return newRound(order, s.teamMode, makeRng(s.rng), s.round + 1)
+    return newRound(order, s.teamMode, s.map, makeRng(s.rng), s.round + 1)
   }
   if (s.phase !== 'play') throw new RuleError('게임이 끝났어요')
   switch (a.type) {
@@ -272,8 +290,8 @@ const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFi
 function move(s: GameState, a: Extract<Action, { type: 'move' }>): GameState {
   const t = requireTurn(s, a.by)
   if (!finite(a.x)) throw new RuleError('잘못된 위치예요')
-  const r = walk(s.terrain, t.x, a.x, s.fuel)
-  const tank: Tank = { ...t, x: r.x, y: surface(s.terrain, r.x), facing: a.facing === -1 ? -1 : 1 }
+  const r = walk(terrainOf(s), t.x, t.y, a.x, s.fuel)
+  const tank: Tank = { ...t, x: r.x, y: r.y, facing: a.facing === -1 ? -1 : 1 }
   return { ...s, tanks: s.tanks.map((x) => (x.id === t.id ? tank : x)), fuel: r.fuel, seq: s.seq + 1 }
 }
 
@@ -286,14 +304,8 @@ function fire(s: GameState, a: Extract<Action, { type: 'fire' }>): GameState {
   const angle = clamp(Math.round(a.angle), 0, 90)
   const power = clamp(Math.round(a.power * 10) / 10, 0, 100)
   const facing = a.facing === -1 ? -1 : 1
-  const deg = absoluteDeg(angle, facing)
-  const degs = a.weapon === 'triple' ? [deg - TRIPLE_SPREAD, deg, deg + TRIPLE_SPREAD] : [deg]
-
-  const from = muzzle(t, deg)
-  const bodies = s.tanks.filter((x) => x.alive)
-  const flights = degs.map((d) =>
-    fly({ h: s.terrain, from, deg: d, speed: power * SPEED_PER_POWER, wind: s.wind, tanks: bodies, shooter: t.id }),
-  )
+  const before = terrainOf(s)
+  const flights = shotFlights(s, before, { by: t.id, weapon: a.weapon, angle, power, facing })
 
   const tanks = s.tanks.map((x) => ({ ...x, ammo: { ...x.ammo } }))
   const me = tanks[s.current]
@@ -302,9 +314,9 @@ function fire(s: GameState, a: Extract<Action, { type: 'fire' }>): GameState {
   me.facing = facing
   if (a.weapon !== 'shell') me.ammo[a.weapon]--
 
-  let terrain = s.terrain
+  let terrain = before
   const booms: Boom[] = []
-  const landed = flights.filter((f) => f.end !== 'out').sort((p, q) => p.steps - q.steps)
+  const landed = flights.filter((f) => f.end === 'ground' || f.end === 'tank').sort((p, q) => p.steps - q.steps)
   for (const f of landed) {
     terrain = applyCrater(terrain, f.x, f.y, spec.r)
     const hits: Boom['hits'] = []
@@ -318,17 +330,21 @@ function fire(s: GameState, a: Extract<Action, { type: 'fire' }>): GameState {
     booms.push({ x: Math.round(f.x), y: Math.round(f.y), r: spec.r, steps: f.steps, hits })
   }
 
-  // 발밑이 파이면 떨어진다. 잔해도 같이 떨어진다.
+  // 발밑이 파이면 떨어진다. 잔해도 같이 떨어진다. 흙은 무너지지 않는다.
   const falls: Shot['falls'] = []
   const deaths: string[] = []
   for (const tk of tanks) {
-    const ny = surface(terrain, tk.x)
+    const ground = tk.y <= FELL_Y ? -Infinity : groundBelow(terrain, tk.x, tk.y)
+    const ny = ground === -Infinity ? FELL_Y : ground
     const drop = tk.y - ny
     tk.y = ny
     if (!tk.alive) continue
-    if (ny <= WATER) {
+    if (ground === -Infinity) {
       tk.hp = 0
       tk.out = 'fall'
+    } else if (drowned(terrain, ny)) {
+      tk.hp = 0
+      tk.out = 'sea'
     } else if (tk.hp > 0) {
       const dmg = fallDamage(drop)
       if (dmg > 0) {
@@ -344,16 +360,26 @@ function fire(s: GameState, a: Extract<Action, { type: 'fire' }>): GameState {
   }
 
   const seq = s.seq + 1
-  const shot: Shot = {
-    seq,
-    by: t.id,
-    weapon: a.weapon,
-    flights: flights.map((f) => ({ path: f.path, steps: f.steps })),
-    booms,
-    falls,
-    deaths,
-  }
-  return finish({ ...s, tanks, terrain, lastShot: shot, seq })
+  const shot: Shot = { seq, by: t.id, weapon: a.weapon, angle, power, facing, booms, falls, deaths }
+  return finish({ ...s, tanks, terrain: encodeTerrain(terrain), lastShot: shot, seq })
+}
+
+/**
+ * 발사 직전 상태 `s` 에서 쏜 포탄들의 비행. `applyAction` 과 화면 재생이 같은 함수를 쓴다.
+ * `terrain` 은 `terrainOf(s)`(여러 번 부를 때 다시 풀지 않도록 받는다).
+ */
+export function shotFlights(
+  s: GameState,
+  terrain: Terrain,
+  shot: Pick<Shot, 'by' | 'weapon' | 'angle' | 'power' | 'facing'>,
+): Flight[] {
+  const t = tankOf(s, shot.by)
+  if (!t) return []
+  const deg = absoluteDeg(shot.angle, shot.facing)
+  const degs = shot.weapon === 'triple' ? [deg - TRIPLE_SPREAD, deg, deg + TRIPLE_SPREAD] : [deg]
+  const from = muzzle(t, deg)
+  const bodies = s.tanks.filter((x) => x.alive)
+  return degs.map((d) => fly({ t: terrain, from, deg: d, speed: shot.power * SPEED_PER_POWER, wind: s.wind, tanks: bodies, shooter: t.id }))
 }
 
 function resign(s: GameState, by: string): GameState {

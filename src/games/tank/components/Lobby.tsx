@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { playerId, type PlayerInfo } from '@/net'
 import { absoluteUrl } from '@/router'
 import { COLOR_NAME, COLORS, SLOTS, TEAM_COLORS, TEAM_NAME } from '../game/rules'
+import { MAPS } from '../game/world'
 import { tankPath } from '../paths'
 import { tank, WATCH, type TankRoomApi } from '../room'
 import { Backdrop } from './Backdrop'
+import { MapPicker } from './MapPicker'
 import styles from './Menu.module.scss'
 import { TankIcon } from './TankIcon'
 
@@ -28,6 +30,8 @@ export function Lobby({
   const [copied, setCopied] = useState(false)
   if (!room) return null
   const teamMode = room.settings.teamMode
+  // 맵 설정이 생기기 전에 만든 방은 언덕으로 본다.
+  const map = room.settings.map && MAPS[room.settings.map] ? room.settings.map : 'hills'
   const isHost = hostId === playerId
   const link = absoluteUrl(tankPath(code))
 
@@ -89,6 +93,7 @@ export function Lobby({
             </div>
           </div>
           <p className={styles.ruleHint}>{MODE_HINT[teamMode ? 'team' : 'ffa']}</p>
+          <MapPicker value={map} disabled={!isHost} onChange={(m) => api.setSettings({ map: m })} />
         </section>
 
         <div className={styles.seats}>

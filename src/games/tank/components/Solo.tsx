@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { playerId } from '@/net'
 import { botPlan, type BotLevel } from '../game/bot'
 import { applyAction, createGame, currentTank, RuleError, type Action, type GameState } from '../game/rules'
+import { MAP_KINDS, type MapKind } from '../game/world'
 import { Backdrop } from './Backdrop'
 import { GameView, type GameApi } from './GameView'
+import { MapPicker } from './MapPicker'
 import styles from './Menu.module.scss'
 
 // 봇과 대전. 전부 이 탭 안에서 돈다: 방도, 백엔드도 없고 어디에도 아무것도 보내지 않는다.
@@ -25,6 +27,7 @@ interface Setup {
   level: BotLevel
   count: Count
   mode: Mode
+  map: MapKind
 }
 
 interface Saved extends Setup {
@@ -36,16 +39,19 @@ const isBot = (id: string) => /^bot\d$/.test(id)
 
 /** 이 탭을 새로고침해도 게임이 유지된다. */
 function load(): Saved {
-  const fallback: Saved = { level: 'normal', count: '1', mode: 'ffa', game: null }
+  const fallback: Saved = { level: 'normal', count: '1', mode: 'ffa', map: 'hills', game: null }
   try {
     const raw = sessionStorage.getItem(STORE)
     if (!raw) return fallback
     const v = JSON.parse(raw) as Partial<Saved>
-    const game = v.game && Array.isArray(v.game.tanks) && v.game.tanks.some((t) => t.id === playerId) ? v.game : null
+    // 지형이 문자열이 아니면 맵이 생기기 전에 저장한 판이다. 버린다.
+    const game =
+      v.game && typeof v.game.terrain === 'string' && Array.isArray(v.game.tanks) && v.game.tanks.some((t) => t.id === playerId) ? v.game : null
     return {
       level: v.level && LEVELS.includes(v.level) ? v.level : fallback.level,
       count: v.count && COUNTS.includes(v.count) ? v.count : fallback.count,
       mode: v.mode && MODES.includes(v.mode) ? v.mode : fallback.mode,
+      map: v.map && MAP_KINDS.includes(v.map) ? v.map : fallback.map,
       game,
     }
   } catch {
@@ -63,7 +69,7 @@ function save(v: Saved) {
 
 function useSoloGame(name: string) {
   const [initial] = useState(load)
-  const [setup, setSetup] = useState<Setup>({ level: initial.level, count: initial.count, mode: initial.mode })
+  const [setup, setSetup] = useState<Setup>({ level: initial.level, count: initial.count, mode: initial.mode, map: initial.map })
   const [game, setGame] = useState<GameState | null>(initial.game)
   const [error, setError] = useState<string | null>(null)
   const [idleSeq, setIdleSeq] = useState<number | null>(null)
@@ -106,7 +112,7 @@ function useSoloGame(name: string) {
       slot: i + 1,
     }))
     // 팀전이면 자리 0, 2 가 빨강팀이라 봇 2 가 내 편이 된다.
-    commit(createGame({ players: [{ id: playerId, name, slot: 0 }, ...bots], teamMode: team, seed: Math.floor(Math.random() * 2 ** 32) }))
+    commit(createGame({ players: [{ id: playerId, name, slot: 0 }, ...bots], teamMode: team, map: setup.map, seed: Math.floor(Math.random() * 2 ** 32) }))
   }, [commit, name, setup])
 
   // 봇의 손: 재생이 끝나고 봇 차례면 잠깐 뒤에 쏜다.
@@ -171,6 +177,9 @@ export function Solo({ name, onLeave }: { name: string; onLeave: () => void }) {
             set={(count) => setSetup((s) => ({ ...s, count, mode: count === '3' ? s.mode : 'ffa' }))}
           />
           <Seg label="방식" value={setup.mode} options={modes} names={MODE_LABEL} set={(mode) => setSetup((s) => ({ ...s, mode }))} />
+        </section>
+        <section className={styles.settings}>
+          <MapPicker value={setup.map} onChange={(map) => setSetup((s) => ({ ...s, map }))} />
         </section>
         {setup.count === '3' && setup.mode === 'team' && <p className="hint">봇 한 대가 내 편이 돼요</p>}
 
