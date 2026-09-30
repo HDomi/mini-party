@@ -1,6 +1,8 @@
 // 레이아웃이 바뀌는 폭. 미디어 쿼리는 아래 mixin 으로만 쓴다.
 $mobile: 640px;
 $narrow: 420px;
+// 가로로 눕힌 휴대폰처럼 높이가 낮은 화면.
+$short: 520px;
 
 @mixin mobile {
   @media (max-width: $mobile) {
@@ -10,6 +12,12 @@ $narrow: 420px;
 
 @mixin narrow {
   @media (max-width: $narrow) {
+    @content;
+  }
+}
+
+@mixin short {
+  @media (max-height: $short) {
     @content;
   }
 }

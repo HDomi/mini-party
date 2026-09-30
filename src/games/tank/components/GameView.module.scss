@@ -60,20 +60,27 @@
   padding: 3px 8px;
 }
 
-.players {
+.hud {
   position: absolute;
   top: max(58px, calc(env(safe-area-inset-top) + 46px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+
+.players {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 6px;
-  pointer-events: none;
-  width: max-content;
-  max-width: calc(100% - 24px);
+  max-width: 100%;
 }
 
 .player {
@@ -252,7 +259,7 @@
 }
 
 @include mobile {
-  .players {
+  .hud {
     top: max(54px, calc(env(safe-area-inset-top) + 42px));
   }
   .player {
@@ -270,11 +277,6 @@
 
 // ── 바람 ──
 .wind {
-  position: absolute;
-  top: max(108px, calc(env(safe-area-inset-top) + 96px));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -537,5 +539,64 @@
   }
   .weapon b {
     font-size: 13px;
+  }
+}
+
+// 가로 모드처럼 낮은 화면: 조작판을 두 칸(무기 | 파워·조작)으로 눕히고 위쪽 HUD 를 줄인다.
+@include short {
+  .hud {
+    top: max(8px, env(safe-area-inset-top));
+    gap: 4px;
+  }
+  // 이름과 체력은 전장의 탱크 위에도 나오므로 낮은 화면에서는 위쪽 줄을 숨겨 전장을 넓힌다.
+  .players {
+    display: none;
+  }
+  .wind {
+    padding: 1px 8px;
+  }
+  .windBar {
+    width: 56px;
+  }
+  .dock {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: min(720px, calc(100% - 24px));
+  }
+  .panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    grid-template-areas:
+      'weapons gauge'
+      'weapons controls';
+    gap: 6px 10px;
+    padding: 8px;
+  }
+  .weapons {
+    grid-area: weapons;
+    grid-template-columns: 1fr 1fr;
+    align-content: center;
+  }
+  .weapon {
+    padding: 2px;
+  }
+  .gauge {
+    grid-area: gauge;
+  }
+  .controls {
+    grid-area: controls;
+  }
+  .move,
+  .angle {
+    padding-bottom: 8px;
+  }
+  .pad {
+    width: 40px;
+    height: 40px;
+  }
+  .fire {
+    height: 44px;
+    margin-bottom: 8px;
+  }
+  .keys {
+    display: none;
   }
 }

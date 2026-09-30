@@ -1,0 +1,53 @@
+@use '@/styles/abstracts' as *;
+
+// 오른쪽 위, 바람 표시와 같은 높이에 세로로 놓는 보기 버튼.
+.view {
+  position: absolute;
+  top: max(108px, calc(env(safe-area-inset-top) + 96px));
+  right: 16px;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: rgba(255, 250, 241, 0.92);
+    box-shadow: 0 2px 0 var(--ink);
+    padding: 3px 9px 3px 7px;
+    font-family: var(--display);
+    font-size: 13px;
+    white-space: nowrap;
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+  }
+  b {
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1;
+  }
+}
+
+@include narrow {
+  .view {
+    right: 10px;
+
+    button {
+      padding: 3px 7px 3px 5px;
+      font-size: 12px;
+    }
+  }
+}
+
+@include short {
+  .view {
+    top: max(54px, calc(env(safe-area-inset-top) + 42px));
+  }
+}

@@ -1,6 +1,6 @@
 import { play } from '@/audio/sound'
 import { absoluteDeg, type GameState, type Shot } from '../game/rules'
-import { applyCrater, BARREL, clamp, DT, H, SAMPLE, surface, TURRET_Y, W, WATER } from '../game/world'
+import { applyCrater, BARREL, clamp, DT, SAMPLE, surface, TURRET_Y, W, WATER } from '../game/world'
 
 // 전장 캔버스. React 밖에서 매 프레임 그린다.
 //
@@ -9,8 +9,16 @@ import { applyCrater, BARREL, clamp, DT, H, SAMPLE, surface, TURRET_Y, W, WATER 
 
 /** 좁은 화면에서도 가로로 이만큼은 보인다. 나머지는 카메라가 따라간다. */
 const MIN_VIEW_W = 720
-/** 위쪽 HUD 에 양보하는 높이(px). */
+/** 기본 배율 대비 확대 한도. 축소는 맵 전체 폭이 보일 때까지만 된다. */
+const MAX_ZOOM = 3
+/** 카메라가 올라갈 수 있는 월드 높이. 높이 뜬 포탄도 따라간다. */
+const CEIL = 1000
+/** 위쪽 HUD 에 양보하는 높이(px). 낮은 화면에서는 화면 높이의 10% 까지만. */
 const TOP_RESERVE = 60
+/** 기본 배율에서 세로로 담는 월드 높이. 가장 높은 땅 위의 탱크와 이름표까지. 더 높이 뜬 포탄은 카메라가 따라간다. */
+const FIT_H = 560
+/** 조작판이 화면을 이 비율 넘게 가려도 전장은 이만큼만 올린다. */
+const MAX_INSET = 0.45
 /** 시뮬레이션 1초를 화면에서 몇 배 빠르게 재생할지. */
 const PLAY_SPEED = 1.15
 /** 다른 사람이 움직인 탱크가 화면에서 굴러가는 속도. */
@@ -81,7 +89,14 @@ export class BattleScene {
   private playing: Playing | null = null
   private fx: Fx[] = []
   private camX = W / 2
-  private manual: number | null = null
+  private camY = 0
+  /** 드래그·줌으로 직접 옮긴 카메라 중심. 다음 발사나 차례가 오면 다시 따라간다. */
+  private manual: { x: number; y: number } | null = null
+  /** 사용자가 고른 배율. 차례가 바뀌어도 유지한다. 버튼으로 바꾸면 `zoomGoal` 까지 부드럽게 움직인다. */
+  private zoom = 1
+  private zoomGoal = 1
+  /** "내 탱크" 로 고정해 따라가는 탱크. 없으면 차례인 탱크를 따라간다. */
+  private track: string | null = null
   private inset = 0
   private insetGoal = 0
   private last = 0
@@ -115,16 +130,76 @@ export class BattleScene {
 
   /** 아래쪽 조작판에 가리지 않도록 땅을 이만큼(px) 올린다. */
   setInset(px: number) {
+    if (!Number.isFinite(px)) return
     this.insetGoal = px
     if (!this.target) this.inset = px
   }
 
-  /** 드래그로 카메라를 옮긴다. 다음 발사나 차례가 오면 다시 따라간다. */
-  pan(dxPx: number) {
-    const view = this.view()
-    if (view.width >= W) return
-    const from = this.manual ?? this.camX
-    this.manual = Math.min(W - view.width / 2, Math.max(view.width / 2, from - dxPx / view.s))
+  /** 기본 배율이나 카메라 위치에서 벗어났는지. 초기화 버튼을 보일지 정한다. */
+  get custom() {
+    return this.zoomGoal !== 1 || this.manual !== null || this.track !== null
+  }
+
+  /** 기본 배율에서 이미 맵 전체 폭이 보이는지. 그러면 "전체" 버튼이 할 일이 없다. */
+  get fitsAtDefault() {
+    return this.minZoom(this.view().fit) >= 1
+  }
+
+  /** 끌어서 카메라를 옮긴다(px). 손가락을 따라 전장이 움직인다. */
+  pan(dxPx: number, dyPx: number) {
+    const v = this.view()
+    const c = this.clampCam(this.camX - dxPx / v.s, this.camY + dyPx / v.s, v)
+    this.camX = c.x
+    this.camY = c.y
+    this.manual = c
+  }
+
+  /** 화면의 (px, py) 지점을 고정한 채 배율을 `factor` 배 한다. */
+  zoomAt(factor: number, px: number, py: number) {
+    const v0 = this.view()
+    const z = clamp(this.zoom * factor, this.minZoom(v0.fit), MAX_ZOOM)
+    if (z === this.zoom) return
+    const wx = this.camX - v0.width / 2 + px / v0.s
+    const wy = this.camY + (v0.base - py) / v0.s
+    this.zoom = this.zoomGoal = z
+    const v1 = this.view()
+    const c = this.clampCam(wx - px / v1.s + v1.width / 2, wy - (v1.base - py) / v1.s, v1)
+    this.camX = c.x
+    this.camY = c.y
+    this.manual = c
+  }
+
+  resetView() {
+    this.zoomGoal = 1
+    this.manual = null
+    this.track = null
+  }
+
+  /** 맵 전체 폭이 보이도록 줄인다. */
+  fitMap() {
+    this.zoomGoal = this.minZoom(this.view().fit)
+    this.manual = null
+    this.track = null
+  }
+
+  /** 이 탱크를 크게 보고 계속 따라간다. 발사 중에는 포탄을 먼저 따라간다. */
+  focusTank(id: string) {
+    this.zoomGoal = Math.min(MAX_ZOOM, 2)
+    this.manual = null
+    this.track = id
+  }
+
+  /** 맵 전체 폭이 보이는 배율. 넓은 화면은 기본 배율에서 이미 다 보인다. */
+  private minZoom(fit: number) {
+    return Math.min(1, this.w / (W * fit))
+  }
+
+  private clampCam(x: number, y: number, v: ReturnType<BattleScene['view']>) {
+    const half = v.width / 2
+    return {
+      x: v.width >= W ? W / 2 : clamp(x, half, W - half),
+      y: clamp(y, 0, Math.max(0, CEIL - v.visH)),
+    }
   }
 
   sync(g: GameState) {
@@ -221,9 +296,13 @@ export class BattleScene {
   }
 
   private view() {
-    const s = Math.min((this.h - this.inset - TOP_RESERVE) / H, this.w / MIN_VIEW_W)
-    const width = this.w / s
-    return { s, width, base: this.h - this.inset }
+    // 가로로 눕힌 휴대폰처럼 낮은 화면에서도 남는 높이가 0 이하가 되면 안 된다. 배율이 음수가 되면 전장이 뒤집힌다.
+    const inset = Math.min(this.inset, this.h * MAX_INSET)
+    const top = Math.min(TOP_RESERVE, this.h * 0.1)
+    const base = this.h - inset
+    const fit = Math.max(0.05, Math.min((base - top) / FIT_H, this.w / MIN_VIEW_W))
+    const s = fit * this.zoom
+    return { fit, s, width: this.w / s, base, visH: (base - top) / s }
   }
 
   /** 포탄 `k` 의 위치. 끝났으면 null. */
@@ -243,13 +322,23 @@ export class BattleScene {
   }
 
   frame(now: number) {
-    const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 0
+    const dt = this.last ? clamp((now - this.last) / 1000, 0, 0.05) : 0
     this.last = now
+    // 카메라 값이 한 번이라도 NaN 이 되면 setTransform 이 무시되어 전장이 화면 좌표로(위아래 뒤집혀) 그려진다.
+    // 원인과 상관없이 기본 보기로 되돌린다.
+    if (![this.camX, this.camY, this.zoom, this.zoomGoal, this.inset].every(Number.isFinite)) {
+      if (import.meta.env.DEV) console.warn('battle camera reset', { camX: this.camX, camY: this.camY, zoom: this.zoom, inset: this.inset })
+      this.camX = W / 2
+      this.camY = 0
+      this.zoom = this.zoomGoal = 1
+      this.manual = null
+      this.inset = this.insetGoal
+    }
     this.inset += (this.insetGoal - this.inset) * Math.min(1, dt * 6)
     this.cloudShift += (this.target?.wind ?? 2) * 4 * dt
 
     // 발사 재생
-    let focus: number | null = null
+    let focus: { x: number; y: number } | null = null
     const p = this.playing
     if (p) {
       const step = (((now - p.t0) / 1000) * PLAY_SPEED) / DT
@@ -258,11 +347,11 @@ export class BattleScene {
       for (const f of p.shot.flights) {
         const at = this.shellAt(f, step)
         if (at) {
-          focus = at.x
+          focus = at
           break
         }
       }
-      if (focus === null && booms.length) focus = booms[booms.length - 1].x
+      if (focus === null && booms.length) focus = booms[booms.length - 1]
       const flying = p.shot.flights.some((f) => f.steps > step)
       if (!flying && p.next >= booms.length) {
         p.doneAt ??= now
@@ -293,24 +382,44 @@ export class BattleScene {
     }
 
     // 카메라
-    const view = this.view()
-    if (focus === null) {
-      const g = this.target
-      const cur = g && g.phase === 'play' ? this.tanks.get(g.tanks[g.current].id) : null
-      focus = this.manual ?? cur?.x ?? W / 2
+    // 직접 옮겼으면 그 자리에 둔다(화면 크기·조작판 높이가 바뀌면 범위만 다시 맞춘다).
+    // 아니면 포탄이나 차례인 탱크를 따라간다. 확대했을 때는 세로로도 따라간다.
+    const lo = this.minZoom(this.view().fit)
+    this.zoomGoal = clamp(this.zoomGoal, lo, MAX_ZOOM)
+    this.zoom = clamp(this.zoom, lo, MAX_ZOOM)
+    if (this.zoom !== this.zoomGoal) {
+      const next = this.zoom + (this.zoomGoal - this.zoom) * Math.min(1, dt * 7)
+      this.zoom = Math.abs(next - this.zoomGoal) < 0.002 ? this.zoomGoal : next
     }
-    const half = view.width / 2
-    const goal = view.width >= W ? W / 2 : Math.min(W - half, Math.max(half, focus))
-    this.camX += (goal - this.camX) * Math.min(1, dt * (p ? 5 : 3))
-    if (view.width >= W) this.camX = W / 2
+    const view = this.view()
+    if (this.manual) {
+      this.manual = this.clampCam(this.manual.x, this.manual.y, view)
+      this.camX = this.manual.x
+      this.camY = this.manual.y
+    } else {
+      if (focus === null) {
+        const g = this.target
+        const cur = g && g.phase === 'play' ? this.tanks.get(g.tanks[g.current].id) : null
+        focus = (this.track && this.tanks.get(this.track)) || cur || { x: W / 2, y: 0 }
+      }
+      // 따라가는 대상이 화면 위쪽 여백 안으로 들어올 때만 카메라를 올린다. 평소에는 바닥을 기준선에 둔다.
+      const margin = Math.min(120, view.visH * 0.35)
+      const goal = this.clampCam(focus.x, focus.y + margin - view.visH, view)
+      const k = Math.min(1, dt * (p ? 5 : 3))
+      this.camX += (goal.x - this.camX) * k
+      this.camY += (goal.y - this.camY) * k
+      if (view.width >= W) this.camX = W / 2
+    }
 
     this.draw(now, view, p)
     this.fx = this.fx.filter((f) => now - f.t0 < (f.kind === 'text' ? 1300 : f.kind === 'blast' ? 600 : 1000))
   }
 
-  private draw(now: number, view: { s: number; width: number; base: number }, p: Playing | null) {
+  private draw(now: number, view: ReturnType<BattleScene['view']>, p: Playing | null) {
     const { ctx, dpr } = this
-    const { s, base } = view
+    const { s } = view
+    // 카메라가 올라가면 월드 0 이 조작판 위 기준선보다 아래로 내려간다.
+    const base = view.base + this.camY * s
     let left = this.camX - view.width / 2
     if (now < this.shakeUntil) left += (Math.random() - 0.5) * 6
     const toX = (x: number) => (x - left) * s

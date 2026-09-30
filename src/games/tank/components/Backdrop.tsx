@@ -17,5 +17,5 @@ export function Backdrop({ className }: { className?: string }) {
       }),
     [],
   )
-  return <Battlefield className={className} game={game} labels={false} sound={false} />
+  return <Battlefield className={className} game={game} labels={false} sound={false} interactive={false} />
 }

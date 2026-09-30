@@ -82,7 +82,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
   const [peeking, setPeeking] = useState(false)
   const [mountSeq] = useState(game.seq)
   // 참가자는 조작판이 처음 뜰 때 전장이 한 번 줄어들지 않도록 조작판 높이쯤에서 시작한다.
-  const [inset, setInset] = useState(api.inGame ? 200 : 90)
+  const [inset, setInset] = useState(() => (api.inGame ? Math.min(200, window.innerHeight * 0.35) : 90))
 
   const moveRef = useRef<Moving | null>(null)
   const chargeRef = useRef<number | null>(null)
@@ -349,12 +349,26 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
   }, [over, animating])
 
   // 조작판 높이만큼 땅을 올려 탱크가 가리지 않게 한다. 차례마다 전장이 커졌다 작아지지 않도록 줄이지는 않는다.
+  // 화면 크기가 바뀌면(휴대폰 회전 등) 조작판 배치도 바뀌므로 처음부터 다시 잰다.
   useEffect(() => {
     const el = dockRef.current
     if (!el) return
-    const ro = new ResizeObserver(() => setInset((cur) => Math.max(cur, el.getBoundingClientRect().height + 20)))
+    let size = ''
+    const measure = () => {
+      const h = el.getBoundingClientRect().height + 20
+      const now = `${window.innerWidth}x${window.innerHeight}`
+      if (now !== size) {
+        size = now
+        setInset(h)
+      } else setInset((cur) => Math.max(cur, h))
+    }
+    const ro = new ResizeObserver(measure)
     ro.observe(el)
-    return () => ro.disconnect()
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
   }, [])
 
   if (import.meta.env.DEV) {
@@ -378,7 +392,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
 
   return (
     <main className={styles.game}>
-      <Battlefield className={styles.scene} game={game} getLocal={getLocal} inset={inset} onBusy={onBusy} />
+      <Battlefield className={styles.scene} game={game} getLocal={getLocal} inset={inset} myId={me?.id} onBusy={onBusy} />
 
       <header className={styles.top}>
         <button className="btn ghost small" onClick={onLeave} aria-label="나가기">
@@ -399,29 +413,31 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
         )}
       </header>
 
-      <div className={styles.players}>
-        {game.tanks.map((t) => (
-          <div
-            key={t.id}
-            className={`${styles.player} ${!over && cur.id === t.id ? styles.active : ''} ${t.alive ? '' : styles.dead} ${
-              api.solo || online(t.id) ? '' : styles.off
-            }`}
-          >
-            <TankIcon color={t.alive ? t.color : '#7a716a'} size={24} />
-            <span className={styles.pinfo}>
-              <span className={styles.pname}>
-                {t.name}
-                {t.id === playerId && <em>나</em>}
+      {/* 이름표가 두 줄로 넘쳐도 바람 표시가 그 아래로 밀리도록 한 묶음으로 둔다. */}
+      <div className={styles.hud}>
+        <div className={styles.players}>
+          {game.tanks.map((t) => (
+            <div
+              key={t.id}
+              className={`${styles.player} ${!over && cur.id === t.id ? styles.active : ''} ${t.alive ? '' : styles.dead} ${
+                api.solo || online(t.id) ? '' : styles.off
+              }`}
+            >
+              <TankIcon color={t.alive ? t.color : '#7a716a'} size={24} />
+              <span className={styles.pinfo}>
+                <span className={styles.pname}>
+                  {t.name}
+                  {t.id === playerId && <em>나</em>}
+                </span>
+                <span className={styles.hp}>
+                  <i style={{ width: `${(t.hp / MAX_HP) * 100}%`, background: t.hp > 50 ? '#4caf50' : t.hp > 25 ? '#f2b53a' : '#e8574a' }} />
+                </span>
               </span>
-              <span className={styles.hp}>
-                <i style={{ width: `${(t.hp / MAX_HP) * 100}%`, background: t.hp > 50 ? '#4caf50' : t.hp > 25 ? '#f2b53a' : '#e8574a' }} />
-              </span>
-            </span>
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
+        <Wind wind={game.wind} />
       </div>
-
-      <Wind wind={game.wind} />
 
       <footer ref={dockRef} className={styles.dock}>
         {!overlay && !over && (
