@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { playerId } from '@/net'
+import { SKEW_TEXT } from '@/net/skew'
 import { useRoom } from '@/net/useRoom'
 import { MAPS } from '../game/world'
 import { tank } from '../room'
@@ -47,6 +48,28 @@ export function Room({
     )
   }
 
+  // 배포 전에 열어 둔 탭(옛 코드)과 새 코드가 한 방에 섞이지 않게 한다. 로비에서부터 막는다.
+  if (api.skew) {
+    const text = SKEW_TEXT[api.skew]
+    return (
+      <main className={styles.screen}>
+        <div className={styles.card}>
+          <h2 className={`${styles.title} ${styles.small}`}>{text.title}</h2>
+          <p className={styles.subtitle}>{text.body}</p>
+          <div className={styles.stack}>
+            {api.skew === 'reload' && (
+              <button className="btn primary big" onClick={() => window.location.reload()}>
+                새로고침
+              </button>
+            )}
+            <button className={`btn big ${api.skew === 'old-room' ? 'primary' : ''}`} onClick={onLeave}>
+              처음으로
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
   if (!api.game) return <Lobby code={code} api={api} onLeave={onLeave} onRename={onRename} />
   // 이미 시작한 판에 새로 들어왔다. 바로 관전 화면으로 보내지 않고 먼저 알린다.
   // 이번 판이 끝나 로비로 돌아가면 useRoom 이 자리에 앉힌다. 원래 참가자는 me 가 있어 바로 판으로 돌아간다.

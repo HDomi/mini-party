@@ -34,6 +34,11 @@ VITE_DB_KEY=<DB의 /miniparty_key 와 같은 값>
 
 `main`에 푸시하면 `.github/workflows/deploy.yml`이 실행되어 `https://hdomi.github.io/mini-party/`에 배포된다.
 
+이 앱은 한 번 열면 페이지를 다시 불러오지 않으므로, 배포 전에 열어 둔 탭은 새로고침할 때까지 옛 코드로 돈다. 그래서 두 가지를 둔다.
+
+- 빌드마다 `dist/version.json`(빌드 시각)을 같이 배포한다. 열려 있는 탭은 몇 분마다, 그리고 탭으로 돌아올 때 이 파일을 확인해 버전이 다르면 새로고침하라고 알린다(`src/version.ts`, `UpdateBanner`). 게임 중일 수 있어 저절로 새로고침하지는 않는다.
+- 게임마다 상태 형식 버전(`RoomGame.version`)을 두고 방을 만들 때 `gameVersion`으로 저장한다. 내 코드와 버전이 다른 방에서는 자리에 앉지 않고 새로고침하거나 방을 새로 만들라는 안내를 본다. 상태 모양이 바뀌어 이전 코드와 한 방에서 같이 쓸 수 없게 되면 그 게임의 `version`을 올린다. 빌드 버전이 아니라 이 값으로 비교하므로, 형식이 그대로인 배포에서는 진행 중인 판이 끊기지 않는다.
+
 URL에 `#`을 쓰지 않는다(`src/router`, History API). GitHub Pages는 SPA fallback이 없으므로 `npm run build`가 `dist/index.html`을 `dist/404.html`로도 복사한다. 없는 경로(`/mini-party/yut/ABCD`)로 들어오거나 새로고침하면 Pages가 `404.html`을 주고, 그 안에서 같은 앱이 떠 경로를 읽는다. 응답 상태코드는 404지만 화면은 정상이다. 라우트 이름은 `dist` 안의 실제 폴더(`assets`, `sfx`)와 겹치면 안 된다.
 
 저장소 설정:

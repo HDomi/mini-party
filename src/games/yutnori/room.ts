@@ -10,6 +10,7 @@ export interface YutSettings {
 
 export const yutnori: RoomGame<GameState, Action, YutSettings> = {
   id: 'yutnori',
+  version: 1,
   minPlayers: 2,
   maxPlayers: TEAM_COLORS.length,
   defaultSettings: { teamMode: false, teamCount: 2, piecesPerTeam: 4 },

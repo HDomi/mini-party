@@ -16,6 +16,8 @@ export interface RoomData<S extends object = RoomSettings> {
   hostId: string
   settings: S
   players?: Record<string, PlayerInfo>
+  /** 방을 만든 코드의 게임 상태 형식 버전(`RoomGame.version`). 이 값이 생기기 전에 만든 방에는 없다. */
+  gameVersion?: number
   /** 직렬화된 게임 상태. RTDB의 배열/null 관련 특이 동작을 피하려고 문자열로 저장한다. */
   game?: string | null
   /** 플레이어가 마지막으로 오프라인이 된 시각. `scripts/sweep-rooms.ts`가 ROOM_IDLE_MS 넘게 비어 있던 방을 삭제한다. */

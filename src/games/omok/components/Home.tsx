@@ -41,7 +41,7 @@ export function Home({
     if (!trimmed) return setErr('이름을 먼저 입력해 주세요')
     setBusy(true)
     try {
-      const c = await openRoom(omok.id, { ...omok.defaultSettings })
+      const c = await openRoom(omok, { ...omok.defaultSettings })
       if (c) return enter(c)
       setErr('방을 만들지 못했어요. 다시 시도해 주세요')
     } catch (e) {

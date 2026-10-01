@@ -10,6 +10,11 @@ import type { PlayerInfo } from './types'
 export interface RoomGame<State, Action, Settings extends object> {
   /** `RoomData.gameType` 값. */
   id: string
+  /**
+   * 게임 상태 형식 버전. 방을 만들 때 `RoomData.gameVersion` 에 저장된다. 상태 모양이 바뀌어 이전 코드와
+   * 한 방에서 같이 쓸 수 없게 되면 올린다. 버전이 다른 클라이언트는 자리에 앉지 않고 안내를 본다(`useRoom` 의 `skew`).
+   */
+  version: number
   maxPlayers: number
   minPlayers: number
   defaultSettings: Settings

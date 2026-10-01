@@ -13,6 +13,8 @@ export const WATCH = SLOTS
 
 export const tank: RoomGame<GameState, Action, TankSettings> = {
   id: 'tank',
+  // 2: 맵 추가(지형이 문자열, 궤적 저장 안 함).
+  version: 2,
   minPlayers: 2,
   maxPlayers: 8,
   defaultSettings: { teamMode: false, map: 'hills' },

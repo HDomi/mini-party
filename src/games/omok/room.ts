@@ -11,6 +11,7 @@ export const SEAT = { black: 0, white: 1, watch: 2 } as const
 
 export const omok: RoomGame<GameState, Action, OmokSettings> = {
   id: 'omok',
+  version: 1,
   minPlayers: 2,
   maxPlayers: 8,
   defaultSettings: { rule: 'renju' },

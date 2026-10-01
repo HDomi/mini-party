@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RoomGame } from './game'
 import { backend, playerId } from './index'
+import { roomSkew } from './skew'
 import type { PlayerInfo, RoomData } from './types'
 
 /** 방 구독, 입장·재접속, 호스트 승계, 게임 transaction. 게임별 규칙은 `game`이 넣어 준다. */
@@ -50,8 +51,11 @@ export function useRoom<State, Action, Settings extends object>(
     latestName.current = name
   }, [name])
 
+  // 방을 만든 코드와 게임 상태 형식이 다르면 앉지 않는다. 같은 방에서 상태를 서로 다르게 읽게 된다.
+  const skew = room ? roomSkew(room.gameVersion, game.version) : null
+
   // 방이 로비 상태일 때 플레이어를 앉힌다. 이미 좌석이 있으면 언제든 다시 연결한다.
-  const canSeat = !!room && (!!me || (!state && players.length < game.maxPlayers))
+  const canSeat = !!room && !skew && (!!me || (!state && players.length < game.maxPlayers))
   useEffect(() => {
     if (!canSeat || !name) return
     const team = me?.team ?? game.pickTeam(players)
@@ -140,6 +144,7 @@ export function useRoom<State, Action, Settings extends object>(
     hostId,
     error,
     connError,
+    skew,
     act,
     start,
     toLobby,

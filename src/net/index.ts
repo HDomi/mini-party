@@ -45,10 +45,17 @@ export function makeRoomCode(): string {
 export const ROOM_CODE_PATTERN = /^[A-Z0-9]{4}$/
 
 /** 빈 코드를 골라 방을 만든다. 다섯 번 모두 겹치면 null. 연결 실패는 reject된다. */
-export async function openRoom(gameType: string, settings: RoomSettings): Promise<string | null> {
+export async function openRoom(game: { id: string; version: number }, settings: RoomSettings): Promise<string | null> {
   for (let i = 0; i < 5; i++) {
     const code = makeRoomCode()
-    const ok = await backend.createRoom(code, { gameType, createdAt: Date.now(), hostId: playerId, settings, game: null })
+    const ok = await backend.createRoom(code, {
+      gameType: game.id,
+      gameVersion: game.version,
+      createdAt: Date.now(),
+      hostId: playerId,
+      settings,
+      game: null,
+    })
     if (ok) return code
   }
   return null
