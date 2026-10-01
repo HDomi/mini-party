@@ -153,6 +153,8 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
   const canRoll = myTurn && !rolling && game.rolls < MAX_ROLLS && (game.rolls === 0 || game.held.some((h) => !h))
   const canHold = myTurn && !rolling && game.rolls > 0 && game.rolls < MAX_ROLLS
   const canScore = myTurn && !rolling && game.rolls > 0
+  // 세 번 다 굴렸으면 주사위가 멈춘 뒤 모두 앞쪽 띠로 모은다. 화면에서만 그렇고 상태의 held 는 그대로다.
+  const shownHeld = !over && game.rolls >= MAX_ROLLS && !rolling ? game.held.map(() => true) : game.held
 
   const roll = () => {
     if (!canRoll) return
@@ -229,7 +231,7 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
         <DiceScene
           className={styles.scene}
           dice={game.dice}
-          held={game.held}
+          held={shownHeld}
           roll={game.roll}
           mountSeq={mountSeq}
           interactive={canHold}
