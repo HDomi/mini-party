@@ -1,0 +1,41 @@
+@use '@/styles/abstracts' as *;
+
+.banner {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  white-space: nowrap;
+  font-family: var(--display);
+  font-size: 15px;
+  animation: pop 0.3s ease-out;
+
+  :global(.btn) {
+    padding: 4px 12px;
+    font-size: 14px;
+  }
+}
+
+.close {
+  border: 0;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 6px;
+  color: var(--ink-soft);
+}
+
+@include narrow {
+  .banner {
+    top: max(56px, calc(env(safe-area-inset-top) + 44px));
+  }
+}

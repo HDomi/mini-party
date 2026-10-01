@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { UpdateBanner } from '@/components/UpdateBanner'
 import { VolumeControl } from '@/components/VolumeControl'
 import { gameBySlug } from '@/games/registry'
 import { HomePage } from '@/pages/HomePage'
@@ -14,6 +15,7 @@ export default function App() {
         <Screen />
       </ErrorBoundary>
       <VolumeControl />
+      <UpdateBanner />
     </>
   )
 }
