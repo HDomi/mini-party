@@ -1,0 +1,357 @@
+@use '@/styles/abstracts' as *;
+
+$accent: #7a4fd8;
+
+.game {
+  // 전역 .btn.primary 가 --red 를 쓴다. 요트 화면은 보라색으로 바꾼다.
+  --red: #{$accent};
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  background: radial-gradient(circle at 35% 40%, #4f9a76, #1f4a37 85%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'top sheet'
+    'table sheet'
+    'dock sheet';
+  gap: 0 16px;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(170px, 36vh) auto minmax(0, 1fr);
+    grid-template-areas:
+      'top'
+      'table'
+      'dock'
+      'sheet';
+    gap: 0;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+.top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+
+  :global(.btn.ghost) {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 3px 10px;
+  }
+}
+
+.chip {
+  font-family: var(--display);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 14px;
+}
+.code {
+  @extend .chip;
+  letter-spacing: 3px;
+}
+.spectator {
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.table {
+  grid-area: table;
+  position: relative;
+  min-height: 0;
+}
+
+.scene {
+  position: absolute !important;
+  inset: 0;
+}
+
+// 이번 차례에 굴린 횟수. 쟁반 오른쪽 위에 점 세 개.
+.rolls {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  margin: 0;
+  display: flex;
+  gap: 5px;
+  pointer-events: none;
+
+  i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--paper);
+    background: rgba(255, 250, 241, 0.2);
+  }
+  i.used {
+    background: var(--gold);
+  }
+}
+
+.banner {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+
+  strong {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(72px, 16vw, 150px);
+    color: var(--gold);
+    -webkit-text-stroke: 4px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 8px 0 var(--ink);
+    animation: stamp 1.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(2.4) rotate(-8deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1) rotate(-4deg);
+    opacity: 0;
+  }
+}
+
+.dock {
+  grid-area: dock;
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 8px;
+  width: min(460px, 100%);
+  justify-self: center;
+  padding-top: 8px;
+
+  :global(.waiting) {
+    background: rgba(255, 250, 241, 0.9);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin: 0;
+  }
+
+  @include mobile {
+    gap: 6px;
+    padding: 6px 0 10px;
+  }
+}
+
+.rollBtn {
+  @include mobile {
+    padding: 11px 18px !important;
+    font-size: 18px !important;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--paper);
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.notice {
+  margin: 0;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 5px 12px;
+  text-align: center;
+}
+
+.help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 250, 241, 0.96);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 8px 8px 8px 16px;
+  animation: pop 0.25s ease-out;
+
+  p {
+    margin: 0 4px 0 0;
+    font-size: 15px;
+  }
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+  }
+  :global(.btn) {
+    padding: 7px 14px;
+    font-size: 15px;
+    flex: none;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+
+  :global(.btn) {
+    font-size: 14px;
+  }
+}
+
+.sheet {
+  grid-area: sheet;
+  align-self: center;
+  max-height: 100%;
+  z-index: 10;
+
+  @include mobile {
+    align-self: start;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20, 40, 30, 0.4);
+  backdrop-filter: blur(3px);
+  animation: fade 0.35s both;
+}
+
+.card {
+  width: min(380px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 24px 22px 18px;
+  text-align: center;
+  box-shadow: 0 8px 0 var(--ink);
+  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 44px;
+    margin: 4px 0 0;
+  }
+  > p {
+    color: var(--ink-soft);
+    margin: 6px 0 14px;
+  }
+}
+
+.ranks {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    text-align: left;
+  }
+  li.winner {
+    border-color: var(--ink);
+    background: #fff4cf;
+  }
+  li.out {
+    opacity: 0.55;
+  }
+  i {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 2px solid var(--ink);
+    flex: none;
+  }
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 19px;
+    margin-left: auto;
+  }
+}
+
+.place {
+  font-family: var(--display);
+  font-size: 18px;
+  width: 1.2em;
+  text-align: center;
+}
+
+.rname {
+  font-family: var(--display);
+  font-size: 17px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  em {
+    font-style: normal;
+    font-family: var(--body);
+    font-size: 11px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+    vertical-align: 2px;
+  }
+}
+
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.toast {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  animation: pop 0.25s ease-out;
+}

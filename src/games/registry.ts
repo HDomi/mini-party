@@ -3,6 +3,8 @@ import { OmokApp } from './omok/OmokApp'
 import omokCover from './omok/assets/cover.webp'
 import tankCover from './tank/assets/cover.svg'
 import { TankApp } from './tank/TankApp'
+import yachtCover from './yacht/assets/cover.svg'
+import { YachtApp } from './yacht/YachtApp'
 import yutCover from './yutnori/assets/cover.webp'
 import { YutnoriApp } from './yutnori/YutnoriApp'
 
@@ -77,6 +79,16 @@ export const GAMES: GameEntry[] = [
     color: '#e8742a',
     cover: tankCover,
     App: TankApp,
+  },
+  {
+    id: 'yacht',
+    slug: 'yacht',
+    title: '요트 다이스',
+    tagline: '굴리고, 잡고, 요트!',
+    tags: ['2~6명', '관전', '봇'],
+    color: '#7a4fd8',
+    cover: yachtCover,
+    App: YachtApp,
   },
 ]
 

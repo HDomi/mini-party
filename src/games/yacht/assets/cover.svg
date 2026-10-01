@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- 요트 다이스 메인화면 타일 배경. 직접 그린 그림이라 저작자 표시가 필요 없다. -->
+  <defs>
+    <radialGradient id="felt" cx="0.45" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#4f9a76"/>
+      <stop offset="1" stop-color="#1f4a37"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b07440"/>
+      <stop offset="1" stop-color="#8a532c"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#wood)"/>
+  <rect x="34" y="34" width="732" height="432" rx="26" fill="url(#felt)" stroke="#5e3519" stroke-width="6"/>
+  <path d="M70 420 H730" stroke="#cfeedd" stroke-opacity="0.35" stroke-width="4" stroke-dasharray="14 12"/>
+  <g transform="translate(190 250) rotate(-14)">
+    <rect x="-46.0" y="-40.0" width="104" height="104" rx="22" fill="#000" opacity="0.22"/>
+    <rect x="-52.0" y="-52.0" width="104" height="104" rx="22" fill="#fffaf1" stroke="#3a2a22" stroke-width="6"/>
+    <circle cx="-28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="28.1" r="9" fill="#3a2a22"/>
+  </g>
+  <g transform="translate(330 205) rotate(9)">
+    <rect x="-46.0" y="-40.0" width="104" height="104" rx="22" fill="#000" opacity="0.22"/>
+    <rect x="-52.0" y="-52.0" width="104" height="104" rx="22" fill="#fffaf1" stroke="#3a2a22" stroke-width="6"/>
+    <circle cx="-28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="28.1" r="9" fill="#3a2a22"/>
+  </g>
+  <g transform="translate(470 262) rotate(-6)">
+    <rect x="-46.0" y="-40.0" width="104" height="104" rx="22" fill="#000" opacity="0.22"/>
+    <rect x="-52.0" y="-52.0" width="104" height="104" rx="22" fill="#fffaf1" stroke="#3a2a22" stroke-width="6"/>
+    <circle cx="-28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="28.1" r="9" fill="#3a2a22"/>
+  </g>
+  <g transform="translate(610 210) rotate(15)">
+    <rect x="-46.0" y="-40.0" width="104" height="104" rx="22" fill="#000" opacity="0.22"/>
+    <rect x="-52.0" y="-52.0" width="104" height="104" rx="22" fill="#fffaf1" stroke="#3a2a22" stroke-width="6"/>
+    <circle cx="-28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="-28.1" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="0.0" r="9" fill="#3a2a22"/>
+    <circle cx="-28.1" cy="28.1" r="9" fill="#3a2a22"/>
+    <circle cx="28.1" cy="28.1" r="9" fill="#3a2a22"/>
+  </g>
+  <g transform="translate(400 375) rotate(4)">
+    <rect x="-42.0" y="-36.0" width="96" height="96" rx="22" fill="#000" opacity="0.22"/>
+    <rect x="-48.0" y="-48.0" width="96" height="96" rx="22" fill="#fffaf1" stroke="#3a2a22" stroke-width="6"/>
+    <circle cx="0.0" cy="0.0" r="15" fill="#d94436"/>
+  </g>
+</svg>
