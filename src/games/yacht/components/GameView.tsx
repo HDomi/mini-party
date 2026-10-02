@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { play } from '@/audio/sound'
 import { playerId } from '@/net'
 import {
+  BONUS_AT,
   CAT_LABEL,
   CATS,
   countsOf,
@@ -9,6 +10,8 @@ import {
   MAX_ROLLS,
   ranking,
   scoreOf,
+  totalsOf,
+  UPPER,
   type Action,
   type Cat,
   type GameState,
@@ -43,12 +46,15 @@ const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hov
 
 const isYacht = (dice: number[]) => countsOf(dice).includes(dice.length)
 
+type Banner = 'yacht' | 'bonus'
+const BANNER_TEXT: Record<Banner, string> = { yacht: '요트!', bonus: '보너스!' }
+
 export function GameView({ code, api, game, onLeave }: { code: string; api: GameApi; game: GameState; onLeave: () => void }) {
   const [mountSeq] = useState(game.seq)
   const [busy, setBusy] = useState(false)
   const [picked, setPicked] = useState<Cat | null>(null)
   const [confirmResign, setConfirmResign] = useState(false)
-  const [banner, setBanner] = useState(false)
+  const [banner, setBanner] = useState<Banner | null>(null)
   const [overlay, setOverlay] = useState(game.phase === 'over')
   // 결과 카드를 닫고 점수표를 보는 중. 이때만 다시 여는 버튼이 보인다.
   const [peeking, setPeeking] = useState(false)
@@ -73,25 +79,31 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rollSeq])
 
-  // 다섯 눈이 모두 같으면 도장을 찍는다.
+  // 다섯 눈이 모두 같고 요트 칸이 비어 있으면 도장을 찍는다. 이미 적은 칸이면 그냥 같은 눈일 뿐이다.
   useEffect(() => {
     if (rolling || rollSeq <= mountSeq || game.rolls === 0 || !isYacht(game.dice)) return
-    setBanner(true)
+    if (!game.roll || game.scores[game.roll.by][CATS.indexOf('yacht')] !== null) return
+    setBanner('yacht')
     play('mo')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rolling])
 
   useEffect(() => {
     if (!banner) return
-    const t = window.setTimeout(() => setBanner(false), 1500)
+    const t = window.setTimeout(() => setBanner(null), 1500)
     return () => window.clearTimeout(t)
   }, [banner])
 
-  // 점수를 적으면 소리를 낸다.
+  // 점수를 적으면 소리를 낸다. 이 점수로 윗칸 보너스를 넘겼으면 도장을 찍는다.
   const lastSeq = game.last?.seq ?? 0
   useEffect(() => {
-    if (lastSeq <= mountSeq || !game.last) return
-    play(game.last.score > 0 ? 'goal' : 'step', game.last.score > 0 ? 1 : 0.7)
+    const last = game.last
+    if (lastSeq <= mountSeq || !last) return
+    const upper = totalsOf(game.scores[last.by]).upper
+    if (CATS.indexOf(last.cat) < UPPER && upper >= BONUS_AT && upper - last.score < BONUS_AT) {
+      setBanner('bonus')
+      play('mo')
+    } else play(last.score > 0 ? 'goal' : 'step', last.score > 0 ? 1 : 0.7)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastSeq])
 
@@ -245,8 +257,8 @@ export function GameView({ code, api, game, onLeave }: { code: string; api: Game
           </p>
         )}
         {banner && (
-          <div className={styles.banner}>
-            <strong>요트!</strong>
+          <div className={`${styles.banner} ${styles[banner]}`}>
+            <strong>{BANNER_TEXT[banner]}</strong>
           </div>
         )}
       </section>

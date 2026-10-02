@@ -22,7 +22,7 @@ $accent: #7a4fd8;
 
   @include mobile {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(170px, 36vh) auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(140px, 25vh) auto minmax(0, 1fr);
     grid-template-areas:
       'top'
       'table'
@@ -118,6 +118,9 @@ $accent: #7a4fd8;
     text-shadow: 0 8px 0 var(--ink);
     animation: stamp 1.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
   }
+  &.bonus strong {
+    color: #5fd38d;
+  }
 }
 
 @keyframes stamp {
@@ -158,8 +161,8 @@ $accent: #7a4fd8;
   }
 
   @include mobile {
-    gap: 6px;
-    padding: 6px 0 10px;
+    gap: 4px;
+    padding: 2px 0 8px;
   }
 }
 
@@ -219,6 +222,12 @@ $accent: #7a4fd8;
 
   :global(.btn) {
     font-size: 14px;
+  }
+  @include mobile {
+    :global(.btn) {
+      padding: 3px 12px;
+      font-size: 13px;
+    }
   }
 }
 
