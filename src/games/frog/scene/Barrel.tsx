@@ -1,6 +1,7 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { HALF_H, HOLE_LIST, HOOPS, IMPACT, POP, R_END, radiusAt, WALL } from './layout'
 import { staveTexture } from './textures'
 import { since, type TimelineRef } from './timeline'
@@ -17,8 +18,16 @@ const profile = (inset: number) =>
 const outerGeometry = new THREE.LatheGeometry(profile(0), 96)
 const innerGeometry = new THREE.LatheGeometry(profile(WALL), 96)
 const rimGeometry = new THREE.RingGeometry(R_END - WALL, R_END + 0.01, 96)
-const holeGeometry = new THREE.CircleGeometry(0.17, 28)
-const holeRimGeometry = new THREE.RingGeometry(0.16, 0.23, 28)
+
+/** 구멍 24개를 한 덩어리로 합친다. 구멍마다 따로 그리면 그리는 횟수만 늘어난다. */
+function allHoles(g: THREE.BufferGeometry, lift: number) {
+  const m = new THREE.Matrix4()
+  return mergeGeometries(
+    HOLE_LIST.map((h) => g.clone().applyMatrix4(m.compose(h.pos.clone().addScaledVector(h.normal, lift), h.quat, new THREE.Vector3(1, 1, 1)))),
+  )
+}
+const holesGeometry = allHoles(new THREE.CircleGeometry(0.17, 28), 0.014)
+const holeRimsGeometry = allHoles(new THREE.RingGeometry(0.16, 0.23, 28), 0.01)
 const glowGeometry = new THREE.RingGeometry(0.25, 0.34, 32)
 const hitGeometry = new THREE.CircleGeometry(0.34, 16)
 
@@ -80,7 +89,7 @@ export function Barrel({ tl, taken, aim, interactive, onPick, children }: Barrel
 
   return (
     <group ref={ref}>
-      <mesh geometry={outerGeometry} castShadow receiveShadow>
+      <mesh geometry={outerGeometry} receiveShadow>
         <meshStandardMaterial map={tex} roughness={0.75} />
       </mesh>
       <mesh geometry={innerGeometry} material={innerMaterial} />
@@ -90,16 +99,16 @@ export function Barrel({ tl, taken, aim, interactive, onPick, children }: Barrel
         <meshStandardMaterial color="#2a170a" />
       </mesh>
       {HOOPS.map((y) => (
-        <mesh key={y} material={hoopMaterial} rotation-x={Math.PI / 2} position-y={y} castShadow>
+        <mesh key={y} material={hoopMaterial} rotation-x={Math.PI / 2} position-y={y}>
           <torusGeometry args={[radiusAt(y) + 0.015, 0.075, 10, 96]} />
         </mesh>
       ))}
+      <mesh geometry={holeRimsGeometry} material={holeRimMaterial} />
+      <mesh geometry={holesGeometry} material={holeMaterial} />
       {HOLE_LIST.map((h, i) => {
         const glow = aim?.hole === i ? aim.color : hover === i ? '#ffd35a' : null
         return (
           <group key={i} position={h.pos} quaternion={h.quat}>
-            <mesh geometry={holeRimGeometry} material={holeRimMaterial} position-z={0.01} />
-            <mesh geometry={holeGeometry} material={holeMaterial} position-z={0.014} />
             {glow && <Glow color={glow} />}
             {interactive && !taken.has(i) && (
               <mesh

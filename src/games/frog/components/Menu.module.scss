@@ -19,8 +19,8 @@ $accent: #2f9e48;
 .backdrop {
   position: absolute !important;
   inset: 0;
-  opacity: 0.6;
-  filter: blur(1.5px);
+  // 움직이는 캔버스에 CSS blur 를 걸면 매 프레임 화면 전체를 흐리게 해야 한다. 옅게만 깐다.
+  opacity: 0.55;
   pointer-events: none;
 }
 

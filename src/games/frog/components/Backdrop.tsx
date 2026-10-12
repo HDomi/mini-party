@@ -6,5 +6,5 @@ const SWORDS: SceneSword[] = [2, 9, 13, 20].map((hole, i) => ({ hole, seq: i + 1
 
 /** 메뉴 카드 뒤에서 천천히 도는 흐릿한 통. */
 export function Backdrop({ className }: { className?: string }) {
-  return <FrogScene className={className} swords={SWORDS} last={null} mountSeq={99} aim={null} interactive={false} onPick={() => {}} quiet spin />
+  return <FrogScene className={className} swords={SWORDS} last={null} mountSeq={99} aim={null} interactive={false} onPick={() => {}} quiet spin lite />
 }

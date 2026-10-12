@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { FLIGHT, HALF_H, HOLE_LIST, IMPACT, LAND, POP, WINDUP } from './layout'
 import { since, type TimelineRef } from './timeline'
 
@@ -14,10 +15,11 @@ const black = new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.2 
 const dark = new THREE.MeshStandardMaterial({ color: '#2f5a1e', roughness: 0.6 })
 const blush = new THREE.MeshBasicMaterial({ color: '#ff8fa6', transparent: true, opacity: 0.75, depthWrite: false })
 const tongue = new THREE.MeshStandardMaterial({ color: '#ff6f86', roughness: 0.5 })
-const sweat = new THREE.MeshPhysicalMaterial({ color: '#8fd6ff', roughness: 0.05, transmission: 0.3, transparent: true, opacity: 0.85 })
+// transmission 을 쓰면 땀방울이 보일 때마다 장면을 한 번 더 그린다. 반투명 + 광택으로 충분하다.
+const sweat = new THREE.MeshStandardMaterial({ color: '#8fd6ff', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.85 })
 const starMat = new THREE.MeshBasicMaterial({ color: '#ffd35a' })
 
-const sphere = new THREE.SphereGeometry(1, 32, 24)
+const sphere = new THREE.SphereGeometry(1, 24, 18)
 const mouthGeometry = new THREE.TorusGeometry(0.22, 0.035, 8, 24, Math.PI)
 const browGeometry = new THREE.CapsuleGeometry(0.035, 0.22, 4, 8).rotateZ(Math.PI / 2)
 const starGeometry = (() => {
@@ -46,7 +48,14 @@ const HANDS = [-1, 1].map((sx) => ({
   shoulder: new THREE.Vector3(sx * 0.6, 0.15, 0.55),
   hand: new THREE.Vector3(sx * 0.92, HAND_Y, 1.38),
 }))
-const ARMS = HANDS.map((h) => armGeometry(h.shoulder, h.hand))
+/** 팔, 손, 손가락은 움직이지 않으므로 양쪽을 한 덩어리로 합친다. */
+const HANDS_GEOMETRY = mergeGeometries(
+  HANDS.flatMap(({ shoulder, hand }) => [
+    armGeometry(shoulder, hand),
+    new THREE.SphereGeometry(1, 20, 14).scale(0.19, 0.1, 0.17).translate(hand.x, hand.y, hand.z),
+    ...[-0.11, 0, 0.11].map((dx) => new THREE.SphereGeometry(0.065, 12, 8).translate(hand.x + dx, HAND_Y - 0.04, hand.z + 0.15)),
+  ]),
+)
 
 /** 날아오르는 처음 속도. 같은 시간 안에 내려오도록 중력을 맞춘다. */
 const V = 13
@@ -167,22 +176,14 @@ export function Frog({ tl, tension, aim }: { tl: TimelineRef; tension: number; a
   return (
     <group ref={root}>
       {/* 손은 움츠려도 테두리를 놓지 않는다. */}
-      {HANDS.map(({ sx, hand }, i) => (
-        <group key={sx}>
-          <mesh geometry={ARMS[i]} material={skin} castShadow />
-          <mesh geometry={sphere} material={skin} position={hand} scale={[0.19, 0.1, 0.17]} castShadow />
-          {[-0.11, 0, 0.11].map((dx) => (
-            <mesh key={dx} geometry={sphere} material={skin} position={[hand.x + dx, HAND_Y - 0.04, hand.z + 0.15]} scale={0.065} />
-          ))}
-        </group>
-      ))}
+      <mesh geometry={HANDS_GEOMETRY} material={skin} />
 
       <group ref={body}>
         <mesh geometry={sphere} material={skin} position={[0, 0.2, 0]} scale={[0.95, 0.85, 0.9]} castShadow />
         <mesh geometry={sphere} material={belly} position={[0, 0.12, 0.62]} scale={[0.6, 0.55, 0.32]} />
         {[-1, 1].map((sx, i) => (
           <group key={sx}>
-            <mesh geometry={sphere} material={skin} position={[sx * 0.42, 0.95, 0.22]} scale={0.34} castShadow />
+            <mesh geometry={sphere} material={skin} position={[sx * 0.42, 0.95, 0.22]} scale={0.34} />
             <group ref={(g) => void (eyes.current[i] = g)} position={[sx * 0.42, 1.0, 0.4]}>
               <mesh geometry={sphere} material={white} scale={0.27} />
               <group ref={(g) => void (pupils.current[i] = g)}>

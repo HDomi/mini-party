@@ -1,5 +1,5 @@
 import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type * as THREE from 'three'
 import { Barrel } from './Barrel'
@@ -9,8 +9,18 @@ import { HALF_H } from './layout'
 import { GhostSword, Sword } from './Sword'
 import { LONG_AGO, type Timeline, type TimelineRef } from './timeline'
 
-// 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 이 씬에서는 1.5x 도 똑같아 보인다.
-const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
+// 화면을 꽉 채우는 캔버스라 큰 모니터에서는 픽셀 수가 프레임 시간을 좌우한다. 레티나 2x 대신 1.5x 까지만 쓰고,
+// 그래도 픽셀이 이보다 많으면 배율을 더 낮춘다(1x 아래로는 처음부터 내리지 않는다).
+const PIXEL_BUDGET = 2_400_000
+/** 버티지 못하면 이만큼까지 내린다. */
+const MIN_DPR = 0.7
+
+function startDpr() {
+  if (typeof window === 'undefined') return 1
+  const ratio = window.devicePixelRatio || 1
+  const fit = Math.sqrt(PIXEL_BUDGET / (window.innerWidth * window.innerHeight))
+  return Math.min(ratio, 1.5, Math.max(1, fit))
+}
 
 export interface SceneSword {
   hole: number
@@ -31,21 +41,24 @@ export interface FrogSceneProps {
   quiet?: boolean
   /** 메뉴 배경은 사람이 돌리지 않고 저절로 돈다. */
   spin?: boolean
+  /** 메뉴 배경처럼 흐리게 깔리는 화면. 그림자 없이 1x 로 그린다. */
+  lite?: boolean
   className?: string
 }
 
-export function FrogScene({ className, ...props }: FrogSceneProps) {
-  // 기기가 버티지 못하면 1x 로 영구히 낮춘다.
-  const [dpr, setDpr] = useState(MAX_DPR)
+export function FrogScene({ className, lite, ...props }: FrogSceneProps) {
+  // 기기가 버티지 못하면 배율을 조금씩 영구히 낮춘다.
+  const [dpr, setDpr] = useState(startDpr)
   return (
     <Canvas
       className={className}
-      shadows="percentage"
-      dpr={dpr}
+      shadows={lite ? false : 'percentage'}
+      dpr={lite ? 1 : dpr}
       camera={{ fov: 38, position: [0, 3.4, 10], near: 0.5, far: 200 }}
-      gl={{ antialias: true, alpha: true }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} />
+      {!lite && <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(MIN_DPR, d * 0.8))} />}
+      {import.meta.env.DEV && <Stats />}
       <Lights />
       <Contents {...props} />
     </Canvas>
@@ -90,11 +103,11 @@ function Lights() {
         intensity={2.3}
         color="#fff1dc"
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-6}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={5}
+        shadow-camera-bottom={-4}
         shadow-bias={-0.0004}
         shadow-radius={3}
       />
@@ -147,4 +160,13 @@ function CameraRig({ spin }: { spin?: boolean }) {
       rotateSpeed={0.6}
     />
   )
+}
+
+/** 개발용: 프레임마다 그린 횟수를 남긴다. 프로덕션 빌드에서는 제거된다. */
+function Stats() {
+  useFrame(({ gl }) => {
+    const i = gl.info
+    ;(window as unknown as Record<string, unknown>).__frogGL = { calls: i.render.calls, triangles: i.render.triangles, programs: i.programs?.length, geometries: i.memory.geometries, textures: i.memory.textures, pixels: gl.domElement.width * gl.domElement.height }
+  })
+  return null
 }
