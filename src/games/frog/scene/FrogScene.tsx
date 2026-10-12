@@ -1,7 +1,8 @@
-import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei'
+import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type * as THREE from 'three'
+import { PartyCanvas } from '@/components/PartyCanvas'
 import { budgetDpr } from '@/utils/dpr'
 import { Barrel } from './Barrel'
 import { Effects, ShakeGroup } from './Effects'
@@ -9,9 +10,6 @@ import { Frog } from './Frog'
 import { HALF_H } from './layout'
 import { GhostSword, Sword } from './Sword'
 import { LONG_AGO, type Timeline, type TimelineRef } from './timeline'
-
-/** 버티지 못하면 이만큼까지 조금씩 내린다. */
-const MIN_DPR = 0.7
 
 export interface SceneSword {
   hole: number
@@ -38,21 +36,20 @@ export interface FrogSceneProps {
 }
 
 export function FrogScene({ className, lite, ...props }: FrogSceneProps) {
-  // 기기가 버티지 못하면 배율을 조금씩 영구히 낮춘다.
-  const [dpr, setDpr] = useState(() => budgetDpr())
+  // 배율은 화면 크기와 그래픽 가속 여부로 한 번 정한다(budgetDpr). 그리는 횟수를 PartyCanvas 가 일부러 줄이므로
+  // fps 로 기기 성능을 재는 PerformanceMonitor 는 쓰지 않는다(조용할 때 느리다고 오해해 화질을 깎는다).
+  const [dpr] = useState(() => budgetDpr())
   return (
-    <Canvas
+    <PartyCanvas
       className={className}
       shadows={lite ? false : 'percentage'}
       dpr={lite ? 1 : dpr}
+      backdrop={lite}
       camera={{ fov: 38, position: [0, 3.4, 10], near: 0.5, far: 200 }}
-      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
     >
-      {!lite && <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(MIN_DPR, d * 0.8))} />}
-      {import.meta.env.DEV && <Stats />}
       <Lights />
       <Contents {...props} />
-    </Canvas>
+    </PartyCanvas>
   )
 }
 
@@ -151,13 +148,4 @@ function CameraRig({ spin }: { spin?: boolean }) {
       rotateSpeed={0.6}
     />
   )
-}
-
-/** 개발용: 프레임마다 그린 횟수를 남긴다. 프로덕션 빌드에서는 제거된다. */
-function Stats() {
-  useFrame(({ gl }) => {
-    const i = gl.info
-    ;(window as unknown as Record<string, unknown>).__frogGL = { calls: i.render.calls, triangles: i.render.triangles, programs: i.programs?.length, geometries: i.memory.geometries, textures: i.memory.textures, pixels: gl.domElement.width * gl.domElement.height }
-  })
-  return null
 }

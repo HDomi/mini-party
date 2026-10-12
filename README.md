@@ -69,6 +69,17 @@ GitHub는 저장소 활동이 60일간 없으면 예약 워크플로를 일시 �
 
 방 밖에서는 마지막 리스너나 쓰기가 끝나고 2초 뒤 클라이언트가 RTDB 소켓을 닫는다(`goOffline`). 따라서 홈 화면에 띄워 둔 탭은 Spark 요금제의 동시 연결 100개 한도에 포함되지 않는다.
 
+## 렌더링 성능
+
+그래픽 가속이 없는 PC(크롬 하드웨어 가속 꺼짐, 드라이버 차단, 원격 데스크톱·가상 PC)에서는 WebGL 이 SwiftShader 같은 소프트웨어 렌더러로 떨어져 CPU 가 그림과 화면 합성을 전부 한다. 이때 CPU 사용량은 초당 그리는 횟수 × 픽셀 수에 비례한다(빈 캔버스를 1080p 로 초당 30번 지우기만 해도 코어 2개를 쓴다). 그래서:
+
+- 3D 캔버스는 모두 `PartyCanvas`(`src/components/PartyCanvas`)로 그린다. 그리는 때를 이 컴포넌트만 정한다(`frameloop="never"` + `advance`). 판이 바뀌거나 캔버스에 실제 입력이 있으면 4초 동안 60fps, 그 뒤로는 30fps 로 그린다. 메뉴 배경은 30fps. 포격전 2D 캔버스도 같은 규칙(`framePacer`)을 쓴다.
+- 시작할 때 소프트웨어 렌더링인지 확인해(`src/utils/quality.ts`) 저화질로 바꾼다: 30fps / 조용할 때 8fps, 그림자·안티에일리어싱 끔, 픽셀 70만 개 이하.
+- 배율은 화면 크기로 한 번 정한다(`budgetDpr`, 픽셀 240만 개 이하). 그리는 횟수를 일부러 줄이므로 fps 로 성능을 재는 drei `PerformanceMonitor` 는 쓰지 않는다.
+- 움직이는 캔버스 위에 `backdrop-filter`·`filter: blur` 를 쓰지 않는다. 매 프레임 화면 전체를 다시 흐리게 해야 한다.
+
+주소에 `?debug` 를 붙이면 왼쪽 아래에 그리는 fps, 화면 주사율, 활동 신호, 화질, 배율, WebGL 렌더러 이름이 뜬다(`?debug=0` 으로 끈다). `?quality=low` / `?quality=high` 는 감지 결과 대신 화질을 정한다. 둘 다 이 탭에서 기억한다(라우터가 이동하며 주소의 `?` 뒤를 지우기 때문).
+
 ## 사운드
 
 `src/audio/sound.ts`가 Web Audio로 효과음을 재생한다(배경 음악은 연결만 해 두고 지금은 주석 처리). 볼륨은 0에서 시작하며 `localStorage`(`party:volume`)에 저장되고, 오른쪽 위 pill로 조절한다. 효과음은 `.ogg`와 `.m4a`(Safari용)로 제공하며, `afconvert -f m4af -d aac -b 96000 in.ogg out.m4a`로 변환했다. 출처와 라이선스는 `public/sfx/CREDITS.txt`에 있다.

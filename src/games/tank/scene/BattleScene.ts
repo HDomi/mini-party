@@ -114,6 +114,10 @@ export class BattleScene {
   private w = 1
   private h = 1
   private dpr = 1
+  /** 지금 캔버스 배율(진단 표시용). */
+  get pixelRatio() {
+    return this.dpr
+  }
 
   local: LocalAim | null = null
   /** 이름표와 체력바. 메뉴 배경에서는 끈다. */

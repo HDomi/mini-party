@@ -1,7 +1,8 @@
-import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei'
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
+import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei'
+import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import * as THREE from 'three'
+import { PartyCanvas } from '@/components/PartyCanvas'
 import { budgetDpr } from '@/utils/dpr'
 import { BLACK, WHITE, type Color } from '../game/rules'
 import { Board, Bowl } from './Board'
@@ -24,20 +25,19 @@ interface Props extends StonesProps {
 const DRAG_PX = 8
 
 export function OmokScene({ portrait, interactive, ghost, forbidden, onHover, onPick, className, ...stones }: Props) {
-  // 기기가 버티지 못하면 1x 로 영구히 낮춘다.
-  const [dpr, setDpr] = useState(() => budgetDpr())
+  // 배율은 화면 크기와 그래픽 가속 여부로 한 번 정한다(budgetDpr). 그리는 횟수를 PartyCanvas 가 일부러 줄이므로
+  // fps 로 기기 성능을 재는 PerformanceMonitor 는 쓰지 않는다(조용할 때 느리다고 오해해 화질을 깎는다).
+  const [dpr] = useState(() => budgetDpr())
 
   const cellOf = (e: ThreeEvent<PointerEvent | MouseEvent>) => nearestCell(e.point.x, e.point.z)
 
   return (
-    <Canvas
+    <PartyCanvas
       className={className}
       shadows="percentage"
       dpr={dpr}
       camera={{ fov: 34, position: [0, 22, 12], near: 0.5, far: 200 }}
-      gl={{ antialias: true, alpha: true }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} />
       <Lights layoutKey={String(portrait)} />
       <CameraRig portrait={portrait} />
       <Board />
@@ -67,7 +67,7 @@ export function OmokScene({ portrait, interactive, ghost, forbidden, onHover, on
           <planeGeometry args={[BOARD_SIZE, BOARD_SIZE]} />
         </mesh>
       )}
-    </Canvas>
+    </PartyCanvas>
   )
 }
 

@@ -1,6 +1,7 @@
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type * as THREE from 'three'
+import { PartyCanvas } from '@/components/PartyCanvas'
 import { DICE } from '../game/rules'
 import { Dice } from '../scene/Dice'
 import { Lights } from '../scene/DiceScene'
@@ -28,13 +29,13 @@ export function Backdrop({ className }: { className?: string }) {
   }, [])
 
   return (
-    <Canvas className={className} dpr={1} camera={{ fov: 34, position: [0, 15, 12] }}>
+    <PartyCanvas backdrop className={className} dpr={1} camera={{ fov: 34, position: [0, 15, 12] }}>
       <Lights />
       <Spin>
         <Tray />
         <Dice dice={roll.dice} held={NONE} roll={{ seq: roll.seq, rolled: ALL, seed: roll.seed }} mountSeq={1} interactive={false} quiet />
       </Spin>
-    </Canvas>
+    </PartyCanvas>
   )
 }
 

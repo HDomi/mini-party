@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { budgetDpr } from '@/utils/dpr'
+import { framePacer, isRealInput, quality, renderStats } from '@/utils/quality'
 import type { GameState } from '../game/rules'
 import { BattleScene, type LocalAim } from './BattleScene'
 import styles from './Battlefield.module.scss'
@@ -42,6 +43,7 @@ export function Battlefield({
   const sceneRef = useRef<BattleScene | null>(null)
   const localRef = useRef(getLocal)
   const busyRef = useRef(onBusy)
+  const pacerRef = useRef<ReturnType<typeof framePacer> | null>(null)
   const [custom, setCustom] = useState(false)
   const [fits, setFits] = useState(false)
   useLayoutEffect(() => {
@@ -68,14 +70,30 @@ export function Battlefield({
     const ro = new ResizeObserver(fit)
     ro.observe(canvas)
 
+    // 모니터 주사율과 관계없이 1초에 이만큼까지만 그리고, 판이 바뀌거나 입력이 없으면 덜 그린다(framePacer).
+    const q = quality()
+    const pacer = interactive ? framePacer(q.fps, q.idleFps) : framePacer(q.backdropFps, q.backdropFps)
+    pacerRef.current = pacer
+    // 조준은 캔버스 밖 조작판으로도 하므로 창 전체의 입력을 본다.
+    const inputs = ['pointerdown', 'pointermove', 'wheel', 'keydown'] as const
+    const poke = (e: Event) => {
+      if (isRealInput(e)) pacer.poke()
+    }
+    for (const t of inputs) window.addEventListener(t, poke, { passive: true })
     let raf = 0
     const tick = (now: number) => {
+      raf = requestAnimationFrame(tick)
+      // 발사 재생 중에는 길어도 끝까지 부드럽게 그린다.
+      if (!pacer.due(now, scene.busy)) return
       scene.local = localRef.current?.() ?? null
       scene.frame(now)
+      if (interactive) {
+        renderStats.frames++
+        renderStats.dpr = scene.pixelRatio
+      }
       // 값이 같으면 React 가 렌더를 건너뛴다.
       setCustom(scene.custom)
       setFits(scene.fitsAtDefault)
-      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
 
@@ -155,6 +173,7 @@ export function Battlefield({
 
     return () => {
       cancelAnimationFrame(raf)
+      for (const t of inputs) window.removeEventListener(t, poke)
       ro.disconnect()
       offs.forEach((off) => off())
       sceneRef.current = null
@@ -173,6 +192,7 @@ export function Battlefield({
     const scene = sceneRef.current
     if (!scene) return
     scene.sync(game)
+    pacerRef.current?.poke()
     if (!scene.busy) busyRef.current?.(false)
   }, [game])
 

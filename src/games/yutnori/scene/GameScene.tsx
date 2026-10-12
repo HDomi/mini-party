@@ -1,7 +1,8 @@
-import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { PartyCanvas } from '@/components/PartyCanvas'
 import { budgetDpr } from '@/utils/dpr'
 import { GOAL, type GameState } from '../game/rules'
 import { Board } from './Board'
@@ -30,22 +31,20 @@ interface Props extends Omit<PiecesProps, 'game' | 'portrait'> {
 
 export function GameScene(props: Props) {
   const { game, portrait, previews, online, onMiss, ...pieceProps } = props
-  // 기기가 버티지 못하면 1x 로 영구히 낮춘다. 버퍼가 오락가락 재할당되지 않도록 한 단계만 둔다.
-  // 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 1.5x 까지만 쓰고 큰 화면에서는 더 낮춘다(budgetDpr).
-  const [dpr, setDpr] = useState(() => budgetDpr())
+  // 배율은 화면 크기와 그래픽 가속 여부로 한 번 정한다(budgetDpr). 그리는 횟수를 PartyCanvas 가 일부러 줄이므로
+  // fps 로 기기 성능을 재는 PerformanceMonitor 는 쓰지 않는다(조용할 때 느리다고 오해해 화질을 깎는다).
+  const [dpr] = useState(() => budgetDpr())
   return (
-    <Canvas
+    <PartyCanvas
       className="scene"
       shadows="percentage"
       dpr={dpr}
       camera={{ fov: 36, position: [0, 20, 14], near: 0.5, far: 200 }}
-      gl={{ antialias: true, alpha: true }}
       onPointerMissed={() => {
         pieceProps.onHover(null)
         onMiss()
       }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} />
       <Lights layoutKey={`${portrait}-${game.teams.length}`} />
       <CameraRig portrait={portrait} />
       <ShakeGroup>
@@ -57,7 +56,7 @@ export function GameScene(props: Props) {
         ))}
         <YutSticks event={game.event} mountSeq={pieceProps.mountSeq} />
       </ShakeGroup>
-    </Canvas>
+    </PartyCanvas>
   )
 }
 

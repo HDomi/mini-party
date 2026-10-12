@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { DebugHud } from '@/components/DebugHud'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { UpdateBanner } from '@/components/UpdateBanner'
 import { VolumeControl } from '@/components/VolumeControl'
@@ -16,6 +17,7 @@ export default function App() {
       </ErrorBoundary>
       <VolumeControl />
       <UpdateBanner />
+      <DebugHud />
     </>
   )
 }
