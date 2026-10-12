@@ -1,4 +1,6 @@
 import type { ComponentType } from 'react'
+import frogCover from './frog/assets/cover.svg'
+import { FrogApp } from './frog/FrogApp'
 import { OmokApp } from './omok/OmokApp'
 import omokCover from './omok/assets/cover.webp'
 import tankCover from './tank/assets/cover.svg'
@@ -89,6 +91,16 @@ export const GAMES: GameEntry[] = [
     color: '#7a4fd8',
     cover: yachtCover,
     App: YachtApp,
+  },
+  {
+    id: 'frog',
+    slug: 'frog',
+    title: '깜짝 개구리',
+    tagline: '칼 꽂다가, 펑!',
+    tags: ['2~4명', '관전', '봇'],
+    color: '#2f9e48',
+    cover: frogCover,
+    App: FrogApp,
   },
 ]
 

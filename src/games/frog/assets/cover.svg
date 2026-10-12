@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- 깜짝 개구리 메인화면 타일 배경. 직접 그린 그림이라 저작자 표시가 필요 없다. -->
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#fbe2b0"/>
+      <stop offset="1" stop-color="#d99a5c"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a5328"/>
+      <stop offset="0.5" stop-color="#c07a40"/>
+      <stop offset="1" stop-color="#7d4a22"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <g fill="#fff3c4" opacity="0.55">
+    <path d="M400 150 L420 40 L440 150Z"/><path d="M330 160 L280 60 L360 150Z"/><path d="M470 150 L540 60 L500 165Z"/>
+  </g>
+  <ellipse cx="400" cy="470" rx="190" ry="22" fill="#000" opacity="0.18"/>
+  <!-- 통 -->
+  <path d="M250 205 Q230 340 250 465 L550 465 Q570 340 550 205 Z" fill="url(#wood)" stroke="#3a2a22" stroke-width="6"/>
+  <g stroke="#4a2a12" stroke-width="3" opacity="0.6">
+    <path d="M300 205 Q290 335 300 465"/><path d="M350 205 Q345 335 350 465"/><path d="M400 205 V465"/>
+    <path d="M450 205 Q455 335 450 465"/><path d="M500 205 Q510 335 500 465"/>
+  </g>
+  <g fill="#4a4d52" stroke="#2a2a2a" stroke-width="3">
+    <path d="M247 230 Q400 245 553 230 L555 248 Q400 263 245 248Z"/>
+    <path d="M240 330 Q400 345 560 330 L560 350 Q400 365 240 350Z"/>
+    <path d="M246 430 Q400 445 554 430 L552 448 Q400 463 248 448Z"/>
+  </g>
+  <g fill="#140a04"><circle cx="300" cy="290" r="11"/><circle cx="400" cy="296" r="11"/><circle cx="500" cy="290" r="11"/><circle cx="350" cy="395" r="11"/><circle cx="450" cy="395" r="11"/></g>
+  <!-- 꽂힌 칼 -->
+  <g stroke="#3a2a22" stroke-width="4" stroke-linejoin="round">
+    <g transform="translate(300 290) rotate(200)"><rect x="-6" y="-8" width="64" height="16" rx="7" fill="#e8574a"/><rect x="-12" y="-24" width="12" height="48" rx="4" fill="#e6b43c"/><circle cx="66" cy="0" r="11" fill="#e6b43c"/></g>
+    <g transform="translate(500 290) rotate(-20)"><rect x="-6" y="-8" width="64" height="16" rx="7" fill="#2f8fd8"/><rect x="-12" y="-24" width="12" height="48" rx="4" fill="#e6b43c"/><circle cx="66" cy="0" r="11" fill="#e6b43c"/></g>
+    <g transform="translate(450 395) rotate(25)"><rect x="-6" y="-8" width="64" height="16" rx="7" fill="#f2b632"/><rect x="-12" y="-24" width="12" height="48" rx="4" fill="#e6b43c"/><circle cx="66" cy="0" r="11" fill="#e6b43c"/></g>
+  </g>
+  <!-- 개구리 -->
+  <ellipse cx="400" cy="200" rx="105" ry="62" fill="#6fc34a" stroke="#3a2a22" stroke-width="6"/>
+  <ellipse cx="400" cy="214" rx="140" ry="18" fill="#7d4a22" stroke="#3a2a22" stroke-width="6"/>
+  <circle cx="352" cy="140" r="38" fill="#6fc34a" stroke="#3a2a22" stroke-width="6"/>
+  <circle cx="448" cy="140" r="38" fill="#6fc34a" stroke="#3a2a22" stroke-width="6"/>
+  <circle cx="352" cy="142" r="27" fill="#fff"/><circle cx="448" cy="142" r="27" fill="#fff"/>
+  <circle cx="360" cy="150" r="12" fill="#141414"/><circle cx="440" cy="150" r="12" fill="#141414"/>
+  <path d="M322 100 L362 90" stroke="#2f5a1e" stroke-width="7" stroke-linecap="round"/>
+  <path d="M478 100 L438 90" stroke="#2f5a1e" stroke-width="7" stroke-linecap="round"/>
+  <path d="M378 196 Q400 180 422 196" fill="none" stroke="#2f5a1e" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="326" cy="186" rx="13" ry="7" fill="#ff8fa6" opacity="0.8"/><ellipse cx="474" cy="186" rx="13" ry="7" fill="#ff8fa6" opacity="0.8"/>
+  <ellipse cx="315" cy="214" rx="22" ry="11" fill="#6fc34a" stroke="#3a2a22" stroke-width="5"/>
+  <ellipse cx="485" cy="214" rx="22" ry="11" fill="#6fc34a" stroke="#3a2a22" stroke-width="5"/>
+  <path d="M500 118 q10 16 0 24 q-10 -8 0 -24z" fill="#8fd6ff" stroke="#3a2a22" stroke-width="3"/>
+  <g stroke="#3a2a22" stroke-width="5" stroke-linecap="round"><path d="M285 120 l-16 -10"/><path d="M280 145 l-20 0"/><path d="M515 120 l16 -10"/><path d="M520 145 l20 0"/></g>
+</svg>

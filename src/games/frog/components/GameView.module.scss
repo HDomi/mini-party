@@ -1,0 +1,490 @@
+@use '@/styles/abstracts' as *;
+
+$accent: #2f9e48;
+
+.game {
+  // 전역 .btn.primary 가 --red 를 쓴다. 개구리 화면은 초록색으로 바꾼다.
+  --red: #{$accent};
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  background: radial-gradient(circle at 50% 38%, #f6cf8a, #b5713b 80%);
+}
+
+.scene {
+  position: absolute !important;
+  inset: 0;
+}
+
+.top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 0;
+  z-index: 20;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.btn.ghost) {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 3px 10px;
+  }
+}
+
+.chip {
+  font-family: var(--display);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 14px;
+}
+.code {
+  @extend .chip;
+  letter-spacing: 3px;
+}
+.spectator {
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.players {
+  position: absolute;
+  top: max(58px, calc(env(safe-area-inset-top) + 46px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 8px;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px 4px 6px;
+  opacity: 0.75;
+  transition:
+    transform 0.2s,
+    opacity 0.2s,
+    box-shadow 0.2s;
+
+  i {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    flex: none;
+  }
+  &.active {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow:
+      0 3px 0 var(--ink),
+      0 0 0 4px rgba(47, 158, 72, 0.4);
+
+    i {
+      animation: breathe 1.2s ease-in-out infinite;
+    }
+  }
+  &.off .pname {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+  &.loser {
+    opacity: 1;
+    background: var(--gold);
+  }
+}
+
+.pname {
+  font-family: var(--display);
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 24vw;
+
+  em {
+    font-style: normal;
+    font-family: var(--body);
+    font-size: 11px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+    vertical-align: 2px;
+  }
+  @include mobile {
+    font-size: 14px;
+  }
+}
+
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(460px, calc(100% - 32px));
+  // 독의 빈 띠가 뒤에 있는 통의 탭을 가로채면 안 된다
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+  :global(.waiting) {
+    background: rgba(255, 250, 241, 0.9);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin: 0;
+  }
+}
+
+.notice {
+  margin: 0;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 5px 12px;
+  text-align: center;
+}
+
+.prompt {
+  margin: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 8px 18px;
+  font-size: 16px;
+  box-shadow: 0 3px 0 var(--ink);
+  text-align: center;
+  animation: pop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+
+  b {
+    font-family: var(--display);
+    font-weight: 400;
+    color: $accent;
+    margin-right: 4px;
+  }
+  small {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+}
+
+// ── 이곳을 선택하시겠습니까..? ──
+.confirm {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: grid;
+  justify-items: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.dialog {
+  pointer-events: auto;
+  width: min(360px, 100%);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 6px 0 var(--ink);
+  text-align: center;
+  animation: nervous 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  p {
+    margin: 0 0 12px;
+    font-family: var(--display);
+    font-size: 21px;
+  }
+}
+
+.dots {
+  display: inline-block;
+  animation: shiver 0.12s linear infinite;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+
+  :global(.btn) {
+    padding: 11px 0;
+    font-size: 18px;
+  }
+}
+
+@keyframes nervous {
+  0% {
+    transform: translateY(30px) scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-4px) rotate(-1.5deg);
+    opacity: 1;
+  }
+  80% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes shiver {
+  0%,
+  100% {
+    transform: translateX(-1px);
+  }
+  50% {
+    transform: translateX(1px);
+  }
+}
+
+// ── 만화 글씨 ──
+.stamp {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+
+  strong {
+    font-family: var(--display);
+    font-weight: 400;
+    -webkit-text-stroke: 4px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 6px 0 var(--ink);
+  }
+}
+
+.stab {
+  place-items: end center;
+  padding-bottom: 32vh;
+
+  strong {
+    font-size: clamp(54px, 12vw, 96px);
+    color: #fff3c4;
+    animation: poke 0.6s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+  }
+}
+
+.phew {
+  place-items: start center;
+  padding-top: 18vh;
+
+  strong {
+    font-size: clamp(34px, 7vw, 54px);
+    color: #bfe9ff;
+    -webkit-text-stroke-width: 3px;
+    text-shadow: 0 4px 0 var(--ink);
+    animation: phew 1s ease-out both;
+  }
+}
+
+.pop {
+  // 뒤로 터지는 햇살 무늬
+  &::before {
+    content: '';
+    position: absolute;
+    width: 140vmax;
+    height: 140vmax;
+    left: 50%;
+    top: 40%;
+    background: repeating-conic-gradient(rgba(255, 220, 90, 0.55) 0 8deg, transparent 8deg 20deg);
+    mask-image: radial-gradient(circle, #000 0, transparent 60%);
+    transform: translate(-50%, -50%);
+    animation: rays 1.6s ease-out both;
+  }
+
+  strong {
+    position: relative;
+    font-size: clamp(120px, 30vw, 240px);
+    color: #ff5a3c;
+    -webkit-text-stroke-width: 6px;
+    text-shadow: 0 10px 0 var(--ink);
+    animation: boom 1.6s cubic-bezier(0.15, 2, 0.35, 1) both;
+  }
+}
+
+@keyframes poke {
+  0% {
+    transform: scale(0.2) rotate(-25deg);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.15) rotate(-8deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9) rotate(-6deg);
+    opacity: 0;
+  }
+}
+
+@keyframes phew {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  25% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translate(18px, -30px);
+    opacity: 0;
+  }
+}
+
+@keyframes boom {
+  0% {
+    transform: scale(0.1) rotate(12deg);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.35) rotate(-6deg);
+    opacity: 1;
+  }
+  22% {
+    transform: scale(0.95) rotate(3deg);
+  }
+  30% {
+    transform: scale(1.05) rotate(-2deg);
+  }
+  80% {
+    transform: scale(1) rotate(-2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4) rotate(-2deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rays {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2) rotate(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(60, 30, 10, 0.35);
+  backdrop-filter: blur(3px);
+  animation: fade 0.35s both;
+}
+
+.card {
+  width: min(360px, 100%);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 22px 22px 18px;
+  text-align: center;
+  box-shadow: 0 8px 0 var(--ink);
+  animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 40px;
+    margin: 4px 0 0;
+
+    i {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 3px solid var(--ink);
+      flex: none;
+    }
+  }
+  > p {
+    color: var(--ink-soft);
+    margin: 6px 0 18px;
+  }
+  :global(.btn.big) small {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-left: 4px;
+  }
+}
+
+.kicker {
+  margin: 0 !important;
+  font-size: 14px;
+}
+
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.toast {
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  white-space: nowrap;
+  animation: pop 0.25s ease-out;
+}
