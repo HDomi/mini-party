@@ -2,6 +2,7 @@ import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMon
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type * as THREE from 'three'
+import { budgetDpr } from '@/utils/dpr'
 import { Barrel } from './Barrel'
 import { Effects, ShakeGroup } from './Effects'
 import { Frog } from './Frog'
@@ -9,18 +10,8 @@ import { HALF_H } from './layout'
 import { GhostSword, Sword } from './Sword'
 import { LONG_AGO, type Timeline, type TimelineRef } from './timeline'
 
-// 화면을 꽉 채우는 캔버스라 큰 모니터에서는 픽셀 수가 프레임 시간을 좌우한다. 레티나 2x 대신 1.5x 까지만 쓰고,
-// 그래도 픽셀이 이보다 많으면 배율을 더 낮춘다(1x 아래로는 처음부터 내리지 않는다).
-const PIXEL_BUDGET = 2_400_000
-/** 버티지 못하면 이만큼까지 내린다. */
+/** 버티지 못하면 이만큼까지 조금씩 내린다. */
 const MIN_DPR = 0.7
-
-function startDpr() {
-  if (typeof window === 'undefined') return 1
-  const ratio = window.devicePixelRatio || 1
-  const fit = Math.sqrt(PIXEL_BUDGET / (window.innerWidth * window.innerHeight))
-  return Math.min(ratio, 1.5, Math.max(1, fit))
-}
 
 export interface SceneSword {
   hole: number
@@ -48,7 +39,7 @@ export interface FrogSceneProps {
 
 export function FrogScene({ className, lite, ...props }: FrogSceneProps) {
   // 기기가 버티지 못하면 배율을 조금씩 영구히 낮춘다.
-  const [dpr, setDpr] = useState(startDpr)
+  const [dpr, setDpr] = useState(() => budgetDpr())
   return (
     <Canvas
       className={className}

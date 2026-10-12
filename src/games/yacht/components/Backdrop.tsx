@@ -11,7 +11,7 @@ const EVERY_MS = 3600
 const NONE = Array<boolean>(DICE).fill(false)
 const ALL = Array.from({ length: DICE }, (_, i) => i)
 
-/** 메뉴 카드 뒤에서 천천히 돌며 가끔 주사위를 굴리는 흐릿한 쟁반. */
+/** 메뉴 카드 뒤에서 천천히 돌며 가끔 주사위를 굴리는 흐릿한 쟁반. 배경일 뿐이라 그림자 없이 1x 로 그린다. */
 export function Backdrop({ className }: { className?: string }) {
   const [roll, setRoll] = useState({ seq: 1, seed: 7, dice: [6, 6, 6, 6, 6] })
   useEffect(() => {
@@ -28,7 +28,7 @@ export function Backdrop({ className }: { className?: string }) {
   }, [])
 
   return (
-    <Canvas className={className} shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 34, position: [0, 15, 12] }}>
+    <Canvas className={className} dpr={1} camera={{ fov: 34, position: [0, 15, 12] }}>
       <Lights />
       <Spin>
         <Tray />

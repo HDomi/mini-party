@@ -2,6 +2,7 @@ import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMon
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { budgetDpr } from '@/utils/dpr'
 import { GOAL, type GameState } from '../game/rules'
 import { Board } from './Board'
 import { SafeHtml } from './SafeHtml'
@@ -27,13 +28,11 @@ interface Props extends Omit<PiecesProps, 'game' | 'portrait'> {
   onMiss: () => void
 }
 
-// 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 이 씬에서는 1.5x 도 똑같아 보인다.
-const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
-
 export function GameScene(props: Props) {
   const { game, portrait, previews, online, onMiss, ...pieceProps } = props
   // 기기가 버티지 못하면 1x 로 영구히 낮춘다. 버퍼가 오락가락 재할당되지 않도록 한 단계만 둔다.
-  const [dpr, setDpr] = useState(MAX_DPR)
+  // 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 1.5x 까지만 쓰고 큰 화면에서는 더 낮춘다(budgetDpr).
+  const [dpr, setDpr] = useState(() => budgetDpr())
   return (
     <Canvas
       className="scene"

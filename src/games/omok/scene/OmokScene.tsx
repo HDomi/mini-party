@@ -2,6 +2,7 @@ import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMon
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import * as THREE from 'three'
+import { budgetDpr } from '@/utils/dpr'
 import { BLACK, WHITE, type Color } from '../game/rules'
 import { Board, Bowl } from './Board'
 import { BOARD_SIZE, BOARD_TOP, HALF, nearestCell } from './layout'
@@ -19,14 +20,12 @@ interface Props extends StonesProps {
   className?: string
 }
 
-// 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 이 씬에서는 1.5x 도 똑같아 보인다.
-const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
 /** 이보다 많이 끌면 판을 돌린 것으로 보고 돌을 두지 않는다(px). */
 const DRAG_PX = 8
 
 export function OmokScene({ portrait, interactive, ghost, forbidden, onHover, onPick, className, ...stones }: Props) {
   // 기기가 버티지 못하면 1x 로 영구히 낮춘다.
-  const [dpr, setDpr] = useState(MAX_DPR)
+  const [dpr, setDpr] = useState(() => budgetDpr())
 
   const cellOf = (e: ThreeEvent<PointerEvent | MouseEvent>) => nearestCell(e.point.x, e.point.z)
 

@@ -4,10 +4,10 @@ import type * as THREE from 'three'
 import { Board } from '../scene/Board'
 import { Lights } from '../scene/GameScene'
 
-/** 메뉴 카드 뒤에서 천천히 도는 흐릿한 보드. */
+/** 메뉴 카드 뒤에서 천천히 도는 흐릿한 보드. 배경일 뿐이라 그림자 없이 1x 로 그린다. */
 export function Backdrop() {
   return (
-    <Canvas className="scene backdrop" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 34, position: [0, 17, 17] }}>
+    <Canvas className="scene backdrop" dpr={1} camera={{ fov: 34, position: [0, 17, 17] }}>
       <Lights />
       <Spin>
         <Board />

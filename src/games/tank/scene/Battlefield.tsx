@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { budgetDpr } from '@/utils/dpr'
 import type { GameState } from '../game/rules'
 import { BattleScene, type LocalAim } from './BattleScene'
 import styles from './Battlefield.module.scss'
@@ -60,7 +61,8 @@ export function Battlefield({
 
     const fit = () => {
       const r = canvas.getBoundingClientRect()
-      scene.resize(r.width, r.height, Math.min(2, window.devicePixelRatio || 1))
+      // 메뉴 배경은 흐리게 깔리므로 1x 로 충분하다. 게임 화면도 큰 모니터에서는 픽셀 수를 제한한다.
+      scene.resize(r.width, r.height, interactive ? budgetDpr(2, r.width, r.height) : 1)
     }
     fit()
     const ro = new ResizeObserver(fit)

@@ -2,17 +2,15 @@ import { ContactShadows, Environment, Lightformer, PerformanceMonitor } from '@r
 import { Canvas, useThree } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import type * as THREE from 'three'
+import { budgetDpr } from '@/utils/dpr'
 import { Dice, type DiceProps } from './Dice'
 import { RIM, TRAY_D, TRAY_W } from './layout'
 import { Tray } from './Tray'
 
-// 레티나 2x 에 MSAA 를 쓰면 프레임버퍼가 네 배가 된다. 이 씬에서는 1.5x 도 똑같아 보인다.
-const MAX_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
-
 /** 쟁반과 주사위. 카메라는 고정이고 쟁반 전체가 화면에 들어오게 맞춘다. */
 export function DiceScene({ className, ...dice }: DiceProps & { className?: string }) {
   // 기기가 버티지 못하면 1x 로 영구히 낮춘다.
-  const [dpr, setDpr] = useState(MAX_DPR)
+  const [dpr, setDpr] = useState(() => budgetDpr())
   return (
     <Canvas
       className={className}
@@ -39,7 +37,7 @@ export function Lights() {
         intensity={2.2}
         color="#fff1dc"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-10}
         shadow-camera-right={10}
         shadow-camera-top={10}

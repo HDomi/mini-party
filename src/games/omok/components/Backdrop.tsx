@@ -21,10 +21,10 @@ const MOVES = [
   [6, 6],
 ].map(([x, y]) => y * SIZE + x)
 
-/** 메뉴 카드 뒤에서 천천히 도는 흐릿한 판. */
+/** 메뉴 카드 뒤에서 천천히 도는 흐릿한 판. 배경일 뿐이라 그림자 없이 1x 로 그린다. */
 export function Backdrop({ className }: { className?: string }) {
   return (
-    <Canvas className={className} shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 34, position: [0, 19, 17] }}>
+    <Canvas className={className} dpr={1} camera={{ fov: 34, position: [0, 19, 17] }}>
       <Lights />
       <Spin>
         <Board />
